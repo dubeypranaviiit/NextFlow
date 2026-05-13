@@ -1,0 +1,73 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# next.js
+/.next/
+/out/
+/build
+
+# production
+/dist
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# prisma
+/prisma/dev.db
+/prisma/dev.db-journal
+
+# trigger.dev
+.trigger
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# vscode
+.vscode/
+
+# idea
+.idea/
+
+# macOS
+.DS_Store
+
+# windows
+Thumbs.db
+
+# coverage
+/coverage
+
+# temp files
+*.tmp
+*.temp
+
+# vercel
+.vercel
+
+# cache
+.cache
+.eslintcache
+
+# generated files
+/generated
+
+# turbo
+.turbo
+
+# lockfiles (optional - usually commit one)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

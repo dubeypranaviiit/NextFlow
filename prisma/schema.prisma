@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id
+  email     String?
+  name      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  workflows Workflow[]
+  runs      WorkflowRun[]
+
+  @@map("users")
+}
+
+model Workflow {
+  id          String         @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  viewport    Json
+  status      String         @default("idle")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodes       WorkflowNode[]
+  edges       WorkflowEdge[]
+  runs        WorkflowRun[]
+
+  @@index([userId])
+  @@map("workflows")
+}
+
+model WorkflowNode {
+  id         String   @id
+  workflowId String
+  type       String
+  position   Json
+  data       Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@map("workflow_nodes")
+}
+
+model WorkflowEdge {
+  id           String   @id
+  workflowId   String
+  source       String
+  sourceHandle String?
+  target       String
+  targetHandle String?
+  data         Json?
+  createdAt    DateTime @default(now())
+  workflow     Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@map("workflow_edges")
+}
+
+model WorkflowRun {
+  id         String    @id @default(cuid())
+  workflowId String
+  userId     String
+  scope      String
+  state      String
+  inputs     Json?
+  startedAt  DateTime  @default(now())
+  durationMs Int
+  workflow   Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodeRuns   NodeRun[]
+
+  @@index([workflowId])
+  @@index([userId])
+  @@map("workflow_runs")
+}
+
+model NodeRun {
+  id            String      @id @default(cuid())
+  workflowRunId String
+  nodeId        String
+  nodeTitle     String
+  state         String
+  durationMs    Int
+  output        Json?
+  error         String?
+  startedAt     DateTime    @default(now())
+  workflowRun   WorkflowRun @relation(fields: [workflowRunId], references: [id], onDelete: Cascade)
+
+  @@index([workflowRunId])
+  @@map("node_runs")
+}
