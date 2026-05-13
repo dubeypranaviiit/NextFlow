@@ -3,14 +3,23 @@
 import { create } from "zustand";
 
 type UiStore = {
+  /* sidebar */
   search: string;
   sidebarOpen: boolean;
   settingsOpen: boolean;
   commandOpen: boolean;
+  /* countdown timer */
+  countdownSeconds: number;
+  /* loading screen */
+  loadingVisible: boolean;
+  loadingMessage: string;
+
+  /* setters */
   setSearch: (search: string) => void;
   setSidebarOpen: (sidebarOpen: boolean) => void;
   setSettingsOpen: (settingsOpen: boolean) => void;
   setCommandOpen: (commandOpen: boolean) => void;
+  setLoadingVisible: (visible: boolean, message?: string) => void;
 };
 
 export const useUiStore = create<UiStore>((set) => ({
@@ -18,8 +27,14 @@ export const useUiStore = create<UiStore>((set) => ({
   sidebarOpen: true,
   settingsOpen: false,
   commandOpen: false,
+  countdownSeconds: 14 * 3600 + 39 * 60 + 21,
+  loadingVisible: false,
+  loadingMessage: "Live like it's heaven on earth 🌏",
+
   setSearch: (search) => set({ search }),
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
-  setCommandOpen: (commandOpen) => set({ commandOpen })
+  setCommandOpen: (commandOpen) => set({ commandOpen }),
+  setLoadingVisible: (visible, message) =>
+    set({ loadingVisible: visible, ...(message ? { loadingMessage: message } : {}) })
 }));

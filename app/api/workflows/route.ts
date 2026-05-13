@@ -1,65 +1,74 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { createDefaultWorkflow } from "@/lib/sample-workflow";
 import { prisma } from "@/server/db/prisma";
 import { createWorkflowSchema } from "@/schemas/workflow";
+import { getCurrentUserId } from "@/lib/current-user";
+import { createDefaultWorkflow } from "@/lib/sample-workflow";
 
 export async function GET() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (process.env.DATABASE_URL) {
-    const workflows = await prisma.workflow.findMany({
-      where: { userId },
-      include: { nodes: true, edges: true },
-      orderBy: { updatedAt: "desc" }
-    });
-    return NextResponse.json({ workflows });
-  }
-  return NextResponse.json({ workflows: [createDefaultWorkflow(userId)] });
+
+  /* Ensure user row exists */
+  await prisma.user.upsert({
+    where: { id: userId },
+    update: {},
+    create: { id: userId }
+  });
+
+  const workflows = await prisma.workflow.findMany({
+    where: { userId },
+    include: { nodes: true, edges: true },
+    orderBy: { updatedAt: "desc" }
+  });
+  return NextResponse.json({ workflows });
 }
 
 export async function POST(request: Request) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const body = createWorkflowSchema.parse(await request.json());
-  const workflow = createDefaultWorkflow(userId);
-  if (process.env.DATABASE_URL) {
-    await prisma.user.upsert({
-      where: { id: userId },
-      update: {},
-      create: { id: userId }
-    });
-    const saved = await prisma.workflow.create({
-      data: {
-        userId,
-        name: body.name,
-        description: workflow.description,
-        viewport: workflow.viewport,
-        nodes: {
-          createMany: {
-            data: workflow.nodes.map((node) => ({
-              id: crypto.randomUUID(),
-              type: node.type ?? node.data.kind,
-              position: node.position,
-              data: node.data
-            }))
-          }
-        },
-        edges: {
-          createMany: {
-            data: workflow.edges.map((edge) => ({
-              id: edge.id,
-              source: edge.source,
-              sourceHandle: edge.sourceHandle,
-              target: edge.target,
-              targetHandle: edge.targetHandle,
-              data: edge.data
-            }))
-          }
+
+  /* Ensure user row exists */
+  await prisma.user.upsert({
+    where: { id: userId },
+    update: {},
+    create: { id: userId }
+  });
+
+  const template = createDefaultWorkflow(userId, `workflow-${Date.now()}`);
+
+  const saved = await prisma.workflow.create({
+    data: {
+      userId,
+      name: body.name,
+      description: template.description,
+      viewport: template.viewport,
+      nodes: {
+        createMany: {
+          data: template.nodes.map((node) => ({
+            id: node.id,
+            type: node.type ?? node.data.kind,
+            position: node.position,
+            data: node.data as any
+          }))
+        }
+      },
+      edges: {
+        createMany: {
+          data: template.edges.map((edge) => ({
+            id: edge.id,
+            source: edge.source,
+            sourceHandle: edge.sourceHandle ?? null,
+            target: edge.target,
+            targetHandle: edge.targetHandle ?? null,
+            data: (edge.data ?? undefined) as any
+          }))
         }
       }
-    });
-    return NextResponse.json({ workflow: saved }, { status: 201 });
-  }
-  return NextResponse.json({ workflow: { ...workflow, id: crypto.randomUUID(), name: body.name } }, { status: 201 });
+    },
+    include: { nodes: true, edges: true }
+  });
+
+  return NextResponse.json({ workflow: saved }, { status: 201 });
 }

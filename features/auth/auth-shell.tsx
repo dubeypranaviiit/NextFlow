@@ -166,46 +166,27 @@ function InfoCard({ icon, title, text, compact }: { icon: React.ReactNode; title
   );
 }
 
-function AuthModal({ mode, onClose, onSwitch, onLoadingChange }: { mode: AuthMode; onClose: () => void; onSwitch: (mode: AuthMode) => void; onLoadingChange: (loading: boolean) => void }) {
+import { SignIn, SignUp } from "@clerk/nextjs";
+
+function AuthModal({ mode, onClose }: { mode: AuthMode; onClose: () => void; onSwitch: (mode: AuthMode) => void; onLoadingChange: (loading: boolean) => void }) {
   const isSignIn = mode === "sign-in";
 
-  function completeAuth() {
-    onLoadingChange(true);
-    window.setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 650);
-  }
-
   return (
-    <div className="fixed inset-0 z-50 grid place-items-start justify-center bg-black/70 px-4 pt-[54px]">
-      <section className="relative w-[336px] overflow-hidden rounded-[9px] bg-white shadow-float">
-        <button className="absolute right-3 top-3 grid h-6 w-6 place-items-center text-gray-500" onClick={onClose} aria-label="Close">
-          <X size={15} />
+    <div className="fixed inset-0 z-50 grid place-items-start justify-center overflow-y-auto bg-black/70 px-4 pt-[54px]">
+      <div className="relative mt-4">
+        <button 
+          className="absolute -right-10 top-0 grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white/80 hover:bg-white/20 hover:text-white max-sm:right-0 max-sm:-top-10" 
+          onClick={onClose} 
+          aria-label="Close"
+        >
+          <X size={18} />
         </button>
-        <div className="px-8 pb-6 pt-7">
-          <div className="mx-auto grid h-10 w-10 place-items-center bg-black text-xl font-semibold text-white">M</div>
-          <h2 className="mt-5 text-center text-base font-semibold">{isSignIn ? "Sign in to Magica" : "Create your Magica account"}</h2>
-          <p className="mt-2 text-center text-xs text-gray-500">{isSignIn ? "Welcome back! Please sign in to continue" : "Start building AI workflows instantly"}</p>
-          <div className="mt-7 grid grid-cols-2 gap-1.5">
-            <button className="h-7 rounded-md border border-gray-200 bg-white text-xs" onClick={completeAuth}>Apple</button>
-            <button className="h-7 rounded-md border border-gray-200 bg-white text-xs" onClick={completeAuth}>Google</button>
-          </div>
-          <div className="my-6 flex items-center gap-4 text-xs text-gray-500">
-            <span className="h-px flex-1 bg-gray-200" /> or <span className="h-px flex-1 bg-gray-200" />
-          </div>
-          <label className="text-xs font-medium">Email address</label>
-          <input className="mt-2 h-8 w-full rounded-md border border-gray-200 px-3 text-xs outline-none placeholder:text-gray-400" placeholder="Enter your email address" />
-          <button className="mt-6 h-7 w-full rounded-md bg-[#34343d] text-xs font-semibold text-white shadow-card" onClick={completeAuth}>
-            Continue <span className="ml-1 text-[10px]">►</span>
-          </button>
-        </div>
-        <div className="border-t border-gray-200 bg-[#fafafa] px-6 py-4 text-center text-xs text-gray-600">
-          {isSignIn ? "Don't have an account? " : "Already have an account? "}
-          <button className="font-semibold text-gray-900" onClick={() => onSwitch(isSignIn ? "sign-up" : "sign-in")}>
-            {isSignIn ? "Sign up" : "Sign in"}
-          </button>
-        </div>
-      </section>
+        {isSignIn ? (
+          <SignIn routing="hash" fallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard" />
+        ) : (
+          <SignUp routing="hash" fallbackRedirectUrl="/dashboard" signInFallbackRedirectUrl="/dashboard" />
+        )}
+      </div>
     </div>
   );
 }

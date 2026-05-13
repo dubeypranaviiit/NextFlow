@@ -38,6 +38,9 @@ select {
   font: inherit;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Scrollbar                                                          */
+/* ------------------------------------------------------------------ */
 .galaxy-scrollbar {
   scrollbar-color: #d4d7df transparent;
   scrollbar-width: thin;
@@ -53,6 +56,9 @@ select {
   border-radius: 999px;
 }
 
+/* ------------------------------------------------------------------ */
+/*  React Flow overrides                                               */
+/* ------------------------------------------------------------------ */
 .react-flow__pane {
   cursor: grab;
 }
@@ -66,6 +72,11 @@ select {
   height: 9px;
   border: 2px solid #ffffff;
   box-shadow: 0 0 0 1px rgba(16, 16, 20, 0.08);
+  transition: box-shadow 0.15s ease;
+}
+
+.react-flow__handle:hover {
+  box-shadow: 0 0 0 3px rgba(98, 80, 244, 0.22);
 }
 
 .react-flow__handle.connectingto,
@@ -89,6 +100,25 @@ select {
   box-shadow: 0 12px 30px rgba(16, 16, 20, 0.10);
 }
 
+.react-flow__controls {
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.react-flow__controls-button {
+  border-bottom: 1px solid #f3f4f6 !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.react-flow__controls-button svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Galaxy Loader (concentric circles from Galaxy.ai loading screen)   */
+/* ------------------------------------------------------------------ */
 .galaxy-loader {
   position: relative;
   width: 110px;
@@ -150,6 +180,9 @@ select {
   background: #403743;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Loading dots                                                       */
+/* ------------------------------------------------------------------ */
 .loading-dot {
   width: 6px;
   height: 6px;
@@ -158,6 +191,9 @@ select {
   animation: dotPulse 1s ease-in-out infinite;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Keyframe Animations                                                */
+/* ------------------------------------------------------------------ */
 @keyframes loaderSpin {
   to {
     transform: translate(-50%, -50%) rotate(342deg);
@@ -174,4 +210,26 @@ select {
     opacity: 1;
     transform: translateY(-2px);
   }
+}
+
+@keyframes edgeDash {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Selection styles                                                   */
+/* ------------------------------------------------------------------ */
+::selection {
+  background: rgba(98, 80, 244, 0.15);
+}
+
+/* Focus visible ring */
+:focus-visible {
+  outline: 2px solid rgba(98, 80, 244, 0.4);
+  outline-offset: 2px;
 }

@@ -1,10 +1,20 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-const isPublicRoute = createRouteMatcher(["/", "/dashboard", "/workflow(.*)", "/sign-in(.*)", "/sign-up(.*)"]);
+/**
+ * Protected routes require a valid Clerk session.
+ * Everything except the landing page and auth pages is protected.
+ */
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard(.*)",
+  "/workflow(.*)",
+  "/api/workflows(.*)",
+  "/api/runs(.*)",
+  "/api/import(.*)"
+]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || !process.env.CLERK_SECRET_KEY) return;
-  if (!isPublicRoute(req)) {
+  if (isProtectedRoute(req)) {
     await auth.protect();
   }
 });
