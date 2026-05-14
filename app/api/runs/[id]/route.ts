@@ -14,10 +14,9 @@ const nodeRunSchema = z.object({
   state: z.enum(["queued", "running", "success", "failed"]),
   durationMs: z.number().int().min(0),
   output: z.any().optional(),
-  error: z.string().optional()
+  error: z.string().nullish()   
 });
 
-/* GET /api/runs/[id] — fetch a single run with node runs */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -31,7 +30,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   return NextResponse.json({ run });
 }
 
-/* PUT /api/runs/[id] — update run state + optionally add node runs */
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -39,6 +37,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   const body = await request.json();
   const runData = updateRunSchema.parse(body);
+
+  const existing = await prisma.workflowRun.findFirst({
+    where: { id, userId },
+    select: { id: true }
+  });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const updated = await prisma.workflowRun.update({
     where: { id },
@@ -48,7 +52,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
   });
 
-  /* Create node runs if provided */
   if (body.nodeRuns && Array.isArray(body.nodeRuns)) {
     const parsed = body.nodeRuns.map((nr: any) => nodeRunSchema.parse(nr));
     if (parsed.length > 0) {

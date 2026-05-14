@@ -9,14 +9,14 @@ export async function POST(request: Request) {
 
   const payload = importWorkflowSchema.parse(await request.json());
 
-  /* Ensure user row exists */
+ 
   await prisma.user.upsert({
     where: { id: userId },
     update: {},
     create: { id: userId }
   });
 
-  /* Create the workflow from imported data */
+  
   const saved = await prisma.workflow.create({
     data: {
       userId,

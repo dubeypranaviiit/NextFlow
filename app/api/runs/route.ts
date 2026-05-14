@@ -8,13 +8,16 @@ const runRequestSchema = z.object({
   scope: z.enum(["full", "partial", "single"]),
   nodeIds: z.array(z.string()).optional()
 });
-
-/* POST /api/runs — create a new workflow run record */
 export async function POST(request: Request) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const payload = runRequestSchema.parse(await request.json());
+  const workflow = await prisma.workflow.findFirst({
+    where: { id: payload.workflowId, userId },
+    select: { id: true }
+  });
+  if (!workflow) return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
 
   const run = await prisma.workflowRun.create({
     data: {
@@ -28,8 +31,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ run });
 }
-
-/* GET /api/runs?workflowId=xxx — list runs for a workflow */
 export async function GET(request: Request) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

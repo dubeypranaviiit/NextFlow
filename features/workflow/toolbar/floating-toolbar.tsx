@@ -30,7 +30,7 @@ export function FloatingToolbar({ onFit }: { onFit: () => void }) {
 
   return (
     <>
-      {/* Left bottom: undo/redo + minimap toggle + zoom + search + grid + crosshair */}
+    
       <div className="absolute bottom-4 left-4 z-20 flex h-9 items-center gap-0.5 rounded-lg border border-gray-200 bg-white px-1.5 shadow-float">
         <Button size="icon" variant="ghost" onClick={() => window.history.back()} title="Back">
           <ArrowLeft size={13} />
@@ -69,7 +69,7 @@ export function FloatingToolbar({ onFit }: { onFit: () => void }) {
         </Button>
       </div>
 
-      {/* Center bottom: clipboard + add node */}
+     
       <div className="absolute bottom-4 left-1/2 z-20 flex h-9 -translate-x-1/2 items-center gap-0.5 rounded-lg border border-gray-200 bg-white px-1.5 shadow-float">
         <Button size="icon" variant="ghost" title="Clipboard">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>

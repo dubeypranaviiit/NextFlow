@@ -1,6 +1,6 @@
 import type { Edge, Node, Viewport } from "@xyflow/react";
 
-export type NodeKind = "request_inputs" | "crop_image" | "gemini" | "response";
+export type NodeKind = "request_inputs" | "crop_image" | "gemini" | "groq" | "response";
 export type FieldKind = "text_field" | "image_field";
 export type ExecutionState = "idle" | "queued" | "running" | "success" | "failed";
 export type RunScope = "full" | "partial" | "single";

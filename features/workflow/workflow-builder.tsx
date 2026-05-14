@@ -10,7 +10,7 @@ import {
   useReactFlow,
   type NodeTypes
 } from "@xyflow/react";
-import { ArrowLeft, Check, Clock3, Download, FileUp, Loader2, PanelRightOpen, Play, Save } from "lucide-react";
+import { ArrowLeft, Check, Clock3, Columns2, Download, FileUp, Loader2, PanelRightOpen, Play, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Providers } from "@/components/providers";
@@ -18,6 +18,7 @@ import { executeWorkflow } from "@/lib/client-execution";
 import { useWorkflowStore } from "@/store/workflow-store";
 import { CropImageNode } from "@/features/workflow/nodes/crop-image-node";
 import { GeminiNode } from "@/features/workflow/nodes/gemini-node";
+import { GroqNode } from "@/features/workflow/nodes/groq-node";
 import { RequestInputsNode } from "@/features/workflow/nodes/request-inputs-node";
 import { ResponseNode } from "@/features/workflow/nodes/response-node";
 import { FloatingToolbar } from "@/features/workflow/toolbar/floating-toolbar";
@@ -29,19 +30,21 @@ const nodeTypes: NodeTypes = {
   request_inputs: RequestInputsNode,
   crop_image: CropImageNode,
   gemini: GeminiNode,
+  groq: GroqNode,
   response: ResponseNode
 };
 
-export function WorkflowBuilderPage({ embedded = false }: { embedded?: boolean }) {
+export function WorkflowBuilderPage({ embedded = false, onBack }: { embedded?: boolean; onBack?: () => void }) {
   return (
     <Providers>
-      <WorkflowBuilderInner embedded={embedded} />
+      <WorkflowBuilderInner embedded={embedded} onBack={onBack} />
     </Providers>
   );
 }
 
-function WorkflowBuilderInner({ embedded }: { embedded: boolean }) {
+function WorkflowBuilderInner({ embedded, onBack }: { embedded: boolean; onBack?: () => void }) {
   const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const flow = useReactFlow();
   const importRef = useRef<HTMLInputElement>(null);
   const workflow = useWorkflowStore((s) => s.workflow);
@@ -74,7 +77,7 @@ function WorkflowBuilderInner({ embedded }: { embedded: boolean }) {
 
   const fit = useCallback(() => flow.fitView({ duration: 320, padding: 0.18 }), [flow]);
 
-  /* Manual save button */
+ 
   const handleSave = useCallback(async () => {
     setSaving(true);
     saveToDb();
@@ -85,7 +88,7 @@ function WorkflowBuilderInner({ embedded }: { embedded: boolean }) {
     }, 500);
   }, [saveToDb]);
 
-  /* Keyboard shortcuts: Ctrl+Z undo, Ctrl+Shift+Z redo, Ctrl+S save */
+  
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
@@ -109,7 +112,7 @@ function WorkflowBuilderInner({ embedded }: { embedded: boolean }) {
     return () => window.removeEventListener("keydown", handleKey);
   }, [undo, redo, handleSave]);
 
-  /* Close context menu on click */
+  
   useEffect(() => {
     if (!contextMenu) return;
     function handleClick() {
@@ -181,23 +184,33 @@ function WorkflowBuilderInner({ embedded }: { embedded: boolean }) {
         />
       </ReactFlow>
 
-      {/* Top-left: back + workflow name */}
+ 
       {!embedded && (
-        <header className="absolute left-4 top-4 z-20 flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-2 shadow-float">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => router.push("/dashboard")}
+        <header className="absolute left-4 top-4 z-20 flex items-center gap-2">
+       
+          <button
+            className="grid h-8 w-8 place-items-center rounded-md border border-gray-200 bg-white shadow-float transition hover:bg-gray-50"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            title="Toggle sidebar"
           >
-            <ArrowLeft size={15} />
-          </Button>
-          <div className="min-w-[140px] pr-3 text-xs font-semibold">
-            {workflow.name}
+            <Columns2 size={14} className="text-gray-600" />
+          </button>
+          <div className="flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-2 shadow-float">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onBack ? onBack() : router.push("/dashboard")}
+            >
+              <ArrowLeft size={15} />
+            </Button>
+            <div className="min-w-[140px] pr-3 text-xs font-semibold">
+              {workflow.name}
+            </div>
           </div>
         </header>
       )}
 
-      {/* Top-right: execution controls */}
+  
       <div className="absolute right-4 top-4 z-20 flex h-9 items-center gap-2">
         <Button size="sm">
           <Clock3 size={14} /> Est. 0.81 M
@@ -236,7 +249,7 @@ function WorkflowBuilderInner({ embedded }: { embedded: boolean }) {
         </Button>
       </div>
 
-      {/* Import/Export */}
+     
       <div className="absolute right-4 top-[52px] z-20 mt-2 flex gap-2">
         <Button
           size="icon"
@@ -266,6 +279,7 @@ function WorkflowBuilderInner({ embedded }: { embedded: boolean }) {
       </div>
 
       <FloatingToolbar onFit={fit} />
+      {sidebarOpen && <ExecutionHistorySidebar onClose={() => setSidebarOpen(false)} />}
       <HistoryPanel />
       <NodePicker />
       <CanvasContextMenu />
@@ -281,4 +295,88 @@ function download(name: string, content: string) {
   link.download = name;
   link.click();
   URL.revokeObjectURL(url);
+}
+function ExecutionHistorySidebar({ onClose }: { onClose: () => void }) {
+  const runs = useWorkflowStore((s) => s.runs);
+  const [activeTab, setActiveTab] = useState<"ui" | "api">("ui");
+
+  return (
+    <aside className="absolute bottom-0 right-0 top-0 z-30 w-[280px] animate-panelIn border-l border-gray-200 bg-white shadow-float">
+   
+      <div className="flex h-[48px] items-center justify-between border-b border-gray-100 px-4">
+        <h2 className="text-[13px] font-semibold text-gray-900">Execution History</h2>
+        <button
+          className="text-[12px] font-medium text-gray-500 hover:text-gray-700"
+          onClick={onClose}
+        >
+          Close
+        </button>
+      </div>
+
+    
+      <div className="flex border-b border-gray-100">
+        <button
+          className={`flex-1 py-2.5 text-center text-[12px] font-medium transition ${
+            activeTab === "ui"
+              ? "border-b-2 border-gray-900 text-gray-900"
+              : "text-gray-400 hover:text-gray-600"
+          }`}
+          onClick={() => setActiveTab("ui")}
+        >
+          UI Runs
+        </button>
+        <button
+          className={`flex-1 py-2.5 text-center text-[12px] font-medium transition ${
+            activeTab === "api"
+              ? "border-b-2 border-gray-900 text-gray-900"
+              : "text-gray-400 hover:text-gray-600"
+          }`}
+          onClick={() => setActiveTab("api")}
+        >
+          API Runs
+        </button>
+      </div>
+      <div className="flex items-center justify-between border-b border-gray-50 px-4 py-2.5">
+        <span className="text-[12px] font-medium text-gray-700">Run history</span>
+        <select className="rounded border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-600 outline-none">
+          <option>All</option>
+          <option>Success</option>
+          <option>Failed</option>
+        </select>
+      </div>
+      <div className="galaxy-scrollbar h-[calc(100%-148px)] overflow-y-auto p-3">
+        {runs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <p className="text-[12px] italic text-gray-400">
+              No runs for this filter yet.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {runs.map((run) => (
+              <div
+                key={run.id}
+                className="rounded-lg border border-gray-200 bg-white p-3"
+              >
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-medium capitalize">{run.scope} run</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      run.state === "success"
+                        ? "bg-emerald-50 text-emerald-600"
+                        : run.state === "failed"
+                          ? "bg-red-50 text-red-600"
+                          : "bg-gray-50 text-gray-600"
+                    }`}
+                  >
+                    {run.state}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </aside>
+  );
 }

@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/server/db/prisma";
 import { createWorkflowSchema } from "@/schemas/workflow";
 import { getCurrentUserId } from "@/lib/current-user";
-import { createDefaultWorkflow } from "@/lib/sample-workflow";
+import { createBlankWorkflow } from "@/lib/sample-workflow";
 
 export async function GET() {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  /* Ensure user row exists */
+
   await prisma.user.upsert({
     where: { id: userId },
     update: {},
@@ -29,14 +29,14 @@ export async function POST(request: Request) {
 
   const body = createWorkflowSchema.parse(await request.json());
 
-  /* Ensure user row exists */
+
   await prisma.user.upsert({
     where: { id: userId },
     update: {},
     create: { id: userId }
   });
 
-  const template = createDefaultWorkflow(userId, `workflow-${Date.now()}`);
+  const template = createBlankWorkflow(userId, body.name, `workflow-${Date.now()}`);
 
   const saved = await prisma.workflow.create({
     data: {

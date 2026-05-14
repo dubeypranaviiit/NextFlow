@@ -40,7 +40,6 @@ export function CanvasContextMenu() {
             label="Duplicate"
             disabled={isLocked}
             onClick={() => {
-              /* Duplicate is a nice-to-have, close menu for now */
               setContextMenu(null);
             }}
           />

@@ -3,18 +3,18 @@
 import { create } from "zustand";
 
 type UiStore = {
-  /* sidebar */
+ 
   search: string;
   sidebarOpen: boolean;
   settingsOpen: boolean;
   commandOpen: boolean;
-  /* countdown timer */
+  
   countdownSeconds: number;
-  /* loading screen */
+
   loadingVisible: boolean;
   loadingMessage: string;
 
-  /* setters */
+ 
   setSearch: (search: string) => void;
   setSidebarOpen: (sidebarOpen: boolean) => void;
   setSettingsOpen: (settingsOpen: boolean) => void;

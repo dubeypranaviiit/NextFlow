@@ -27,7 +27,7 @@ export function BaseNode({
         className
       )}
     >
-      {/* Header bar */}
+     
       <div
         className={cn(
           "flex h-[34px] items-center border-b border-gray-100 px-3",
@@ -43,7 +43,7 @@ export function BaseNode({
           <Lock size={9} className="ml-1.5 flex-shrink-0 text-gray-300" />
         )}
         <div className="ml-auto flex items-center gap-1.5">
-          {/* Status indicator */}
+       
           {status === "running" && (
             <Loader2 size={11} className="animate-spin text-galaxy-purple" />
           )}
@@ -53,7 +53,6 @@ export function BaseNode({
           {status === "failed" && (
             <XCircle size={11} className="text-red-500" />
           )}
-          {/* Green badge — matches Galaxy.ai "0.0N" cost badge or "Run" button */}
           <span
             className={cn(
               "rounded px-2 py-0.5 text-[9px] font-semibold",

@@ -13,14 +13,10 @@ import { create } from "zustand";
 import { createDefaultWorkflow } from "@/lib/sample-workflow";
 import type { ExecutionState, Workflow, WorkflowEdge, WorkflowNode, WorkflowRun } from "@/types/workflow";
 
-/* ------------------------------------------------------------------ */
-/*  Snapshot for undo / redo                                          */
-/* ------------------------------------------------------------------ */
+
 type Snapshot = Pick<Workflow, "nodes" | "edges" | "viewport">;
 
-/* ------------------------------------------------------------------ */
-/*  Context menu                                                       */
-/* ------------------------------------------------------------------ */
+
 export type ContextMenu = {
   x: number;
   y: number;
@@ -28,19 +24,32 @@ export type ContextMenu = {
   edgeId?: string;
 } | null;
 
-/* ------------------------------------------------------------------ */
-/*  Debounced save                                                     */
-/* ------------------------------------------------------------------ */
+
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let saveInFlight = false;
+let saveQueued = false;
 
 function debouncedSave(workflowId: string) {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    const state = useWorkflowStore.getState();
-    const wf = state.workflow;
-    if (wf.id !== workflowId) return;
+    executeSave(workflowId);
+  }, 2000);
+}
 
-    fetch(`/api/workflows/${workflowId}`, {
+async function executeSave(workflowId: string) {
+  if (saveInFlight) {
+   
+    saveQueued = true;
+    return;
+  }
+
+  const state = useWorkflowStore.getState();
+  const wf = state.workflow;
+  if (wf.id !== workflowId) return;
+
+  saveInFlight = true;
+  try {
+    await fetch(`/api/workflows/${workflowId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -65,37 +74,42 @@ function debouncedSave(workflowId: string) {
           style: e.style
         }))
       })
-    }).catch(() => {
-      /* Silent fail on auto-save */
     });
-  }, 800);
+  } catch {
+   
+  } finally {
+    saveInFlight = false;
+    if (saveQueued) {
+      saveQueued = false;
+      /* Re-save with latest state */
+      executeSave(useWorkflowStore.getState().workflow.id);
+    }
+  }
 }
 
-/* ------------------------------------------------------------------ */
-/*  Store shape                                                        */
-/* ------------------------------------------------------------------ */
+
 type WorkflowStore = {
-  /* workflow */
+ 
   workflow: Workflow;
   loading: boolean;
-  /* selection */
+ 
   selectedIds: string[];
-  /* panels */
+
   historyOpen: boolean;
   pickerOpen: boolean;
   contextMenu: ContextMenu;
-  /* runs */
+ 
   runs: WorkflowRun[];
-  /* execution */
+
   executionState: ExecutionState;
   runningNodeIds: Set<string>;
-  /* undo / redo */
+  
   undoStack: Snapshot[];
   redoStack: Snapshot[];
-  /* zoom tracking */
+
   currentZoom: number;
 
-  /* setters */
+  
   setWorkflow: (workflow: Workflow) => void;
   setSelectedIds: (ids: string[]) => void;
   setHistoryOpen: (open: boolean) => void;
@@ -104,34 +118,33 @@ type WorkflowStore = {
   setExecutionState: (state: ExecutionState) => void;
   setLoading: (loading: boolean) => void;
 
-  /* canvas */
+
   onNodesChange: (changes: NodeChange<WorkflowNode>[]) => void;
   onEdgesChange: (changes: EdgeChange<WorkflowEdge>[]) => void;
   connect: (connection: Connection) => void;
-  addNode: (kind: "crop_image" | "gemini") => void;
+  addNode: (kind: "crop_image" | "gemini" | "groq") => void;
   setViewport: (viewport: Viewport) => void;
   setCurrentZoom: (zoom: number) => void;
   deleteNode: (nodeId: string) => void;
   deleteEdge: (edgeId: string) => void;
 
-  /* execution */
   setNodeStatus: (nodeId: string, status: ExecutionState, response?: string) => void;
   addRun: (run: WorkflowRun) => void;
   setRuns: (runs: WorkflowRun[]) => void;
 
-  /* undo / redo */
+
   undo: () => void;
   redo: () => void;
 
-  /* import / export */
+  
   exportJson: () => string;
   importJson: (workflow: Workflow) => void;
 
-  /* node field updates */
+
   updateNodeField: (nodeId: string, fieldId: string, value: string) => void;
   updateNodeData: (nodeId: string, data: Partial<WorkflowNode["data"]>) => void;
 
-  /* DB hydration */
+
   hydrateFromDb: (workflowId: string) => Promise<void>;
   saveToDb: () => void;
 };
@@ -161,7 +174,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
   setLoading: (loading) => set({ loading }),
 
   onNodesChange: (changes) => {
-    /* Prevent deleting locked nodes */
+   
     const safeChanges = changes.filter((change) => {
       if (change.type === "remove") {
         const node = get().workflow.nodes.find((n) => n.id === change.id);
@@ -180,7 +193,6 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
   onEdgesChange: (changes) => {
     checkpoint();
 
-    /* When removing edges, un-mark the connected input as connected */
     const removedEdgeIds = changes
       .filter((c) => c.type === "remove")
       .map((c) => c.id);
@@ -192,7 +204,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
       if (removedEdgeIds.length > 0) {
         const removedEdges = state.workflow.edges.filter((e) => removedEdgeIds.includes(e.id));
         for (const re of removedEdges) {
-          /* Check if the target handle still has any other connection */
+         
           const stillConnected = edges.some(
             (e) => e.target === re.target && e.targetHandle === re.targetHandle
           );
@@ -226,9 +238,9 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     const output = source?.data.outputs?.find((o) => o.id === connection.sourceHandle);
     const input = target?.data.inputs?.find((i) => i.id === connection.targetHandle);
     if (!source || !target || !output || !input) return;
-    /* Type safety — reject incompatible connections */
+ 
     if (input.type !== "any" && output.type !== "any" && input.type !== output.type) return;
-    /* Cycle prevention */
+  
     if (wouldCreateCycle(workflow.edges, source.id, target.id)) return;
     checkpoint();
     set((state) => {
@@ -270,47 +282,67 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     checkpoint();
     const id = `${kind}-${Date.now()}`;
     const { workflow } = get();
-    /* Place near center of current viewport */
+
     const cx = (-workflow.viewport.x + 400) / workflow.viewport.zoom;
     const cy = (-workflow.viewport.y + 300) / workflow.viewport.zoom;
-    const node: WorkflowNode =
-      kind === "crop_image"
-        ? {
-            id,
-            type: "crop_image",
-            position: { x: cx, y: cy },
-            data: {
-              title: "Crop Image",
-              kind: "crop_image",
-              inputs: [
-                { id: "input_image", label: "Input Image", type: "image" },
-                { id: "x", label: "X Position %", type: "number", value: 0 },
-                { id: "y", label: "Y Position %", type: "number", value: 0 },
-                { id: "width", label: "Width %", type: "number", value: 100 },
-                { id: "height", label: "Height %", type: "number", value: 100 }
-              ],
-              outputs: [{ id: "output_image", label: "Output Image", type: "image" }]
-            }
-          }
-        : {
-            id,
-            type: "gemini",
-            position: { x: cx + 40, y: cy + 40 },
-            data: {
-              title: "Gemini 3.1 Pro",
-              kind: "gemini",
-              model: "Gemini 3.1 Pro",
-              inputs: [
-                { id: "prompt", label: "Prompt", type: "text" },
-                { id: "system_prompt", label: "System Prompt", type: "text" },
-                { id: "image", label: "Image (Vision)", type: "image" },
-                { id: "video", label: "Video", type: "video" },
-                { id: "audio", label: "Audio", type: "audio" },
-                { id: "file", label: "File", type: "file" }
-              ],
-              outputs: [{ id: "response", label: "Response text", type: "text" }]
-            }
-          };
+    let node: WorkflowNode;
+
+    if (kind === "crop_image") {
+      node = {
+        id,
+        type: "crop_image",
+        position: { x: cx, y: cy },
+        data: {
+          title: "Crop Image",
+          kind: "crop_image",
+          inputs: [
+            { id: "input_image", label: "Input Image", type: "image" },
+            { id: "x", label: "X Position %", type: "number", value: 0 },
+            { id: "y", label: "Y Position %", type: "number", value: 0 },
+            { id: "width", label: "Width %", type: "number", value: 100 },
+            { id: "height", label: "Height %", type: "number", value: 100 }
+          ],
+          outputs: [{ id: "output_image", label: "Output Image", type: "image" }]
+        }
+      };
+    } else if (kind === "groq") {
+      node = {
+        id,
+        type: "groq",
+        position: { x: cx + 40, y: cy + 40 },
+        data: {
+          title: "Llama 3.3 70B",
+          kind: "groq",
+          model: "llama-3.3-70b-versatile",
+          inputs: [
+            { id: "prompt", label: "Prompt", type: "text" },
+            { id: "system_prompt", label: "System Prompt", type: "text" }
+          ],
+          outputs: [{ id: "response", label: "Response text", type: "text" }]
+        }
+      };
+    } else {
+      node = {
+        id,
+        type: "gemini",
+        position: { x: cx + 40, y: cy + 40 },
+        data: {
+          title: "Gemini 2.0 Flash",
+          kind: "gemini",
+          model: "Gemini 2.0 Flash",
+          inputs: [
+            { id: "prompt", label: "Prompt", type: "text" },
+            { id: "system_prompt", label: "System Prompt", type: "text" },
+            { id: "image", label: "Image (Vision)", type: "image" },
+            { id: "video", label: "Video", type: "video" },
+            { id: "audio", label: "Audio", type: "audio" },
+            { id: "file", label: "File", type: "file" }
+          ],
+          outputs: [{ id: "response", label: "Response text", type: "text" }]
+        }
+      };
+    }
+
     set((state) => ({ workflow: { ...state.workflow, nodes: [...state.workflow.nodes, node] }, pickerOpen: false }));
     debouncedSave(get().workflow.id);
   },
@@ -420,8 +452,16 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
 
   exportJson: () => JSON.stringify(get().workflow, null, 2),
   importJson: (workflow) => {
-    set({ workflow, undoStack: [], redoStack: [] });
-    debouncedSave(workflow.id);
+    const current = get().workflow;
+    const imported = {
+      ...current,
+      ...workflow,
+      id: current.id,
+      userId: current.userId,
+      updatedAt: new Date().toISOString()
+    };
+    set({ workflow: imported, undoStack: [], redoStack: [] });
+    debouncedSave(current.id);
   },
 
   updateNodeField: (nodeId, fieldId, value) => {
@@ -460,9 +500,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     debouncedSave(get().workflow.id);
   },
 
-  /* ------------------------------------------------------------------ */
-  /*  DB Hydration — load workflow from API                              */
-  /* ------------------------------------------------------------------ */
+
   hydrateFromDb: async (workflowId: string) => {
     set({ loading: true });
     try {
@@ -471,7 +509,6 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
       const data = await res.json();
       const dbWorkflow = data.workflow;
 
-      /* Transform DB records into React Flow format */
       const nodes: WorkflowNode[] = dbWorkflow.nodes.map((n: any) => ({
         id: n.id,
         type: n.type,
@@ -479,7 +516,6 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
         data: n.data
       }));
 
-      /* Reconstruct edges with visual properties */
       const edges: WorkflowEdge[] = dbWorkflow.edges.map((e: any) => {
         const edgeType = e.data?.type ?? "text";
         const color = edgeType === "image" ? "#80aefb" : "#f5a83c";
@@ -498,7 +534,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
 
       const viewport = dbWorkflow.viewport ?? { x: 400, y: 300, zoom: 0.5 };
 
-      /* Transform runs */
+      
       const runs: WorkflowRun[] = (dbWorkflow.runs ?? []).map((r: any) => ({
         id: r.id,
         workflowId: r.workflowId,
@@ -546,9 +582,6 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
   }
 }));
 
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
 function checkpoint() {
   const { workflow, undoStack } = useWorkflowStore.getState();
   useWorkflowStore.setState({ undoStack: [...undoStack.slice(-24), snapshot(workflow)], redoStack: [] });

@@ -158,17 +158,18 @@ export function DashboardPage() {
       if (!file) return;
       try {
         const data = JSON.parse(await file.text());
-        const name = data.name || "Imported Workflow";
-        const res = await fetch("/api/workflows", {
+        const res = await fetch("/api/import", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name })
+          body: JSON.stringify(data)
         });
         if (res.ok) {
           const result = await res.json();
           router.push(`/workflow/${result.workflow.id}`);
         }
-      } catch { /* ignore invalid json */ }
+      } catch {
+        
+       }
     };
     input.click();
   };
@@ -222,7 +223,7 @@ export function DashboardPage() {
           <button className="h-8 px-4 text-xs text-gray-500">Nodes</button>
         </div>
 
-        {/* System Workflows section */}
+      
         <section className="mb-10">
           <h2 className="text-sm font-semibold">System Workflows</h2>
           <p className="mt-1 text-[13px] text-gray-500">Pre-built workflow templates - click to open and start using.</p>
@@ -295,7 +296,6 @@ export function DashboardPage() {
                     )}
                     <p className="mt-1 text-[11px] text-gray-500">{formatDate(wf.updatedAt)}</p>
                   </button>
-                  {/* hover actions */}
                   <div className="absolute right-1 top-1 hidden gap-1 group-hover:flex">
                     <button
                       className="grid h-7 w-7 place-items-center rounded-md bg-white shadow-card hover:bg-gray-50"
@@ -316,7 +316,6 @@ export function DashboardPage() {
                       <Trash2 size={14} />
                     </button>
                   </div>
-                  {/* context menu dropdown */}
                   {menuOpenId === wf.id && (
                     <div className="absolute right-1 top-9 z-30 w-[140px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-float">
                       <button

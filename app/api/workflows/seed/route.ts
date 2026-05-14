@@ -2,29 +2,24 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/server/db/prisma";
 import { getCurrentUserId } from "@/lib/current-user";
 import { createDefaultWorkflow, SYSTEM_WORKFLOW_NAME } from "@/lib/sample-workflow";
-
-/**
- * POST /api/workflows/seed — Seeds the sample "Trial Task Workflow" into the DB
- * Only creates it if it doesn't already exist for this user
- */
 export async function POST() {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  /* Ensure user row exists */
+
   await prisma.user.upsert({
     where: { id: userId },
     update: {},
     create: { id: userId }
   });
 
-  /* Check if a sample workflow already exists */
+
   const existing = await prisma.workflow.findFirst({
     where: { userId, name: SYSTEM_WORKFLOW_NAME },
     include: { nodes: true, edges: true }
   });
 
-  /* Create the sample workflow */
+
   const sample = createDefaultWorkflow(userId, existing?.id ?? `template-${Date.now()}`);
   if (
     existing &&

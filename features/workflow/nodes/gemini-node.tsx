@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { NodeProps } from "@xyflow/react";
-import { ChevronDown, ChevronUp, Info, Loader2, MoreHorizontal, Play, RefreshCw } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Info, Loader2, MoreHorizontal, Play, RefreshCw, Sparkles, Zap } from "lucide-react";
 import { Textarea } from "@/components/ui/input";
 import { BaseNode, InputHandle, OutputHandle } from "@/features/workflow/nodes/base-node";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,12 @@ import { executeWorkflow } from "@/lib/client-execution";
 import { useWorkflowStore } from "@/store/workflow-store";
 import type { WorkflowNode } from "@/types/workflow";
 
+const GEMINI_MODELS = [ 
+   { id:  "gemini-1.5-flash", label: "Gemini 1.5 Flash", description: "Fast and efficient", icon: Zap, color: "#f59e0b" },
+  { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash", description: "Fast and efficient", icon: Zap, color: "#f59e0b" },
+  { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro", description: "Advanced reasoning", icon: Sparkles, color: "#8b5cf6" },
+] as const;
+ 
 const inputHandleColors: Record<string, string> = {
   prompt: "#f5a83c",
   system_prompt: "#f5a83c",
@@ -22,12 +28,25 @@ const inputHandleColors: Record<string, string> = {
 export function GeminiNode(props: NodeProps<WorkflowNode>) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
   const status = props.data.status ?? "idle";
   const isRunning = status === "running";
   const updateNodeData = useWorkflowStore((s) => s.updateNodeData);
   const deleteNode = useWorkflowStore((s) => s.deleteNode);
+  const currentModel = props.data.model ?? "gemini-1.5-flash";
+  const currentModelConfig = GEMINI_MODELS.find((m) => m.id === currentModel) ?? GEMINI_MODELS[0];
 
-  /* Compute output handle Y position based on content height */
+  useEffect(() => {
+    if (!modelDropdownOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(e.target as Node)) {
+        setModelDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [modelDropdownOpen]);
   const baseInputsY = 132;
   const inputCount = props.data.inputs?.length ?? 0;
   const inputsHeight = inputCount * 33;
@@ -38,11 +57,61 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
   return (
     <BaseNode node={props} className="w-[238px]">
       <div className="space-y-2 p-3">
-        {/* Header row: model + run + menu */}
+     
         <div className="flex items-center gap-1">
-          <div className="flex h-7 flex-1 items-center rounded-md border border-gray-200 bg-white px-2 text-[9px] font-medium text-gray-700">
-            {props.data.model ?? "Gemini 3.1 Pro"}
-            <ChevronDown size={12} className="ml-auto text-gray-400" />
+          <div className="relative flex-1" ref={modelDropdownRef}>
+            <button
+              className="flex h-7 w-full items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 text-[9px] font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                setModelDropdownOpen(!modelDropdownOpen);
+              }}
+            >
+              <currentModelConfig.icon size={10} style={{ color: currentModelConfig.color }} />
+              {currentModel}
+              <ChevronDown
+                size={10}
+                className={cn(
+                  "ml-auto text-gray-400 transition-transform",
+                  modelDropdownOpen && "rotate-180"
+                )}
+              />
+            </button>
+            {modelDropdownOpen && (
+              <div className="absolute left-0 top-8 z-50 w-[200px] overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                <div className="px-2 py-1.5 text-[8px] font-semibold uppercase tracking-wider text-gray-400">Select Model</div>
+                {GEMINI_MODELS.map((model) => {
+                  const ModelIcon = model.icon;
+                  const isActive = currentModel === model.id;
+                  return (
+                    <button
+                      key={model.id}
+                      className={cn(
+                        "flex w-full items-center gap-2 px-2 py-1.5 text-left transition-colors hover:bg-gray-50",
+                        isActive && "bg-purple-50"
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateNodeData(props.id, { model: model.id, title: model.label });
+                        setModelDropdownOpen(false);
+                      }}
+                    >
+                      <span
+                        className="grid h-5 w-5 place-items-center rounded"
+                        style={{ backgroundColor: model.color + "18" }}
+                      >
+                        <ModelIcon size={10} style={{ color: model.color }} />
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-[9px] font-medium text-gray-700">{model.label}</span>
+                        <span className="block text-[7px] text-gray-400">{model.description}</span>
+                      </span>
+                      {isActive && <Check size={10} className="text-purple-500" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-0.5">
             <button
@@ -78,7 +147,7 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
           </div>
         </div>
 
-        {/* Node context menu (Duplicate, Duplicate with Edges, Lock, Delete) */}
+        
         {menuOpen && (
           <div
             className="absolute right-2 top-10 z-50 w-[180px] overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-float"
@@ -119,7 +188,7 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
           </div>
         )}
 
-        {/* Prompt label and area */}
+    
         <div>
           <div className="mb-1 flex items-center text-[9px]">
             <span className="font-medium text-[#f5a83c]">Prompt*</span>
@@ -141,7 +210,7 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
           )}
         </div>
 
-        {/* System Prompt */}
+     
         <div>
           <div className="mb-1 text-[9px] font-medium text-gray-500">System Prompt</div>
           {props.data.inputs?.find((i) => i.id === "system_prompt")?.connected ? (
@@ -158,7 +227,6 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
           )}
         </div>
 
-        {/* Input handles with color-coded labels */}
         {props.data.inputs?.map((input, index) => {
           const color = inputHandleColors[input.id] ?? "#94a3b8";
           return (
@@ -195,7 +263,7 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
           );
         })}
 
-        {/* Collapsible settings */}
+
         <button
           className="flex h-7 w-full items-center justify-between rounded-md bg-[#fbfbfc] px-2 text-[9px] text-gray-400 hover:bg-gray-100"
           onClick={() => setSettingsOpen(!settingsOpen)}
@@ -211,7 +279,7 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
           </div>
         )}
 
-        {/* Response / Output */}
+     
         <div className="min-h-[46px] rounded-md border border-gray-100 bg-[#fbfbfc] p-2 text-[9px] leading-4 text-gray-500">
           {isRunning ? (
             <div className="flex items-center gap-2 text-galaxy-purple">

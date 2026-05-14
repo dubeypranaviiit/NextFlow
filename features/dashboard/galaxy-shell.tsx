@@ -6,6 +6,7 @@ import {
   Boxes,
   Building2,
   ChevronUp,
+  Columns2,
   CreditCard,
   FileText,
   Gift,
@@ -16,8 +17,6 @@ import {
   LogOut,
   MessageSquare,
   Music,
-  PanelLeftClose,
-  PanelLeftOpen,
   Search,
   Settings,
   SlidersHorizontal,
@@ -94,21 +93,17 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
   const countdown = useCountdown(useUiStore((s) => s.countdownSeconds));
   const hidden = compact || !sidebarOpen;
 
-  /* Close sidebar on mobile when clicking outside */
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (!sidebarOpen) return;
       const sidebar = document.getElementById("galaxy-sidebar");
       if (sidebar && !sidebar.contains(e.target as Node)) {
-        /* Only close on mobile */
         if (window.innerWidth < 640) setSidebarOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [sidebarOpen, setSidebarOpen]);
-
-  /* ⌘K shortcut */
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -122,7 +117,7 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Red promo banner */}
+   
       <div className="fixed left-0 right-0 top-0 z-40 flex h-[50px] items-center justify-center bg-galaxy-red px-4 text-center text-[12px] font-semibold text-white sm:text-sm">
         Pay once, get a <span className="mx-1 font-extrabold">LIFETIME</span> deal forever — for only $399
         <span className="mx-2 hidden items-center gap-1 text-xs sm:inline-flex">
@@ -131,13 +126,11 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
         <span className="ml-2 hidden cursor-pointer rounded-full bg-white px-4 py-1 text-[11px] font-semibold text-galaxy-red sm:inline">
           Click here
         </span>
-        {/* Mobile compact */}
         <span className="ml-2 inline rounded-full bg-white px-3 py-0.5 text-[10px] font-semibold text-galaxy-red sm:hidden">
           Only $399
         </span>
       </div>
 
-      {/* Sidebar */}
       <aside
         id="galaxy-sidebar"
         className={cn(
@@ -153,10 +146,10 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
             </div>
             <button
               aria-label="Close sidebar"
-              className="grid h-7 w-7 place-items-center rounded-md text-gray-700 hover:bg-white"
+              className="grid h-7 w-7 place-items-center rounded-md border border-gray-200 text-gray-700 hover:bg-white"
               onClick={() => setSidebarOpen(false)}
             >
-              <PanelLeftClose size={14} />
+              <Columns2 size={14} />
             </button>
           </div>
 
@@ -228,18 +221,18 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
         </div>
       </aside>
 
-      {/* Sidebar toggle when hidden */}
+     
       {hidden && (
         <button
           aria-label="Open sidebar"
-          className="fixed left-[14px] top-[62px] z-40 grid h-8 w-8 place-items-center rounded-full border border-gray-200 bg-white shadow-float"
+          className="fixed left-[14px] top-[62px] z-40 grid h-8 w-8 place-items-center rounded-md border border-gray-200 bg-white shadow-float hover:bg-gray-50"
           onClick={() => setSidebarOpen(true)}
         >
-          <PanelLeftOpen size={14} />
+          <Columns2 size={14} className="text-gray-600" />
         </button>
       )}
 
-      {/* Main content */}
+  
       <main
         className={cn(
           "min-h-screen pt-[50px] transition-[padding] duration-200",
@@ -249,17 +242,14 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
         {children}
       </main>
 
-      {/* Settings modal */}
+    
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
-      {/* Command palette */}
+
       {commandOpen && <CommandPalette onClose={() => setCommandOpen(false)} />}
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Settings Dialog                                                    */
-/* ------------------------------------------------------------------ */
 function SettingsDialog({ onClose }: { onClose: () => void }) {
   const [message, setMessage] = useState("");
   const tabs = [
@@ -429,9 +419,7 @@ function ActionRow({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Command Palette                                                    */
-/* ------------------------------------------------------------------ */
+
 function CommandPalette({ onClose }: { onClose: () => void }) {
   const quick = [
     ["Pricing", "Pages", CreditCard, true],

@@ -1,7 +1,9 @@
 import type { Workflow, WorkflowEdge, WorkflowNode } from "@/types/workflow";
 
 export function topologicalBatches(workflow: Workflow, subsetIds?: string[]) {
-  const allow = subsetIds ? new Set(subsetIds) : new Set(workflow.nodes.map((node) => node.id));
+  const allow = subsetIds
+    ? collectUpstreamNodeIds(workflow.edges, subsetIds)
+    : new Set(workflow.nodes.map((node) => node.id));
   const nodes = workflow.nodes.filter((node) => allow.has(node.id));
   const incoming = new Map<string, number>();
   const outgoing = new Map<string, string[]>();
@@ -33,6 +35,23 @@ export function topologicalBatches(workflow: Workflow, subsetIds?: string[]) {
     throw new Error("Workflow contains a cycle");
   }
   return batches;
+}
+
+function collectUpstreamNodeIds(edges: WorkflowEdge[], targetIds: string[]) {
+  const allow = new Set(targetIds);
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+    for (const edge of edges) {
+      if (allow.has(edge.target) && !allow.has(edge.source)) {
+        allow.add(edge.source);
+        changed = true;
+      }
+    }
+  }
+
+  return allow;
 }
 
 export function validateConnection(edge: WorkflowEdge, nodes: WorkflowNode[]) {

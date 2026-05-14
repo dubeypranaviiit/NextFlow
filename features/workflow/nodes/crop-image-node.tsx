@@ -35,7 +35,7 @@ export function CropImageNode(props: NodeProps<WorkflowNode>) {
   return (
     <BaseNode node={props}>
       <div className="space-y-1.5 p-3">
-        {/* Header row with Run + menu */}
+       
         <div className="flex items-center justify-end gap-0.5 -mt-1 mb-1">
           <button
             className="grid h-5 w-5 place-items-center rounded text-gray-400 hover:text-gray-600"
@@ -69,7 +69,7 @@ export function CropImageNode(props: NodeProps<WorkflowNode>) {
           </button>
         </div>
 
-        {/* Node context menu */}
+     
         {menuOpen && (
           <div
             className="absolute right-2 top-10 z-50 w-[180px] overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-float"
@@ -128,7 +128,7 @@ export function CropImageNode(props: NodeProps<WorkflowNode>) {
               </span>
 
               {isNumber ? (
-                /* Slider-style input for numeric fields */
+               
                 <div className="flex flex-1 items-center gap-1.5">
                   <div className="relative h-[6px] flex-1 overflow-hidden rounded-full bg-gray-200">
                     <div
@@ -165,7 +165,7 @@ export function CropImageNode(props: NodeProps<WorkflowNode>) {
           );
         })}
 
-        {/* Output area */}
+      
         <div className="mt-2 rounded-md border border-gray-100 bg-[#fbfbfc] px-2 py-3 text-center text-[9px] text-gray-400">
           {isRunning ? (
             <span className="flex items-center justify-center gap-2 text-galaxy-purple">
