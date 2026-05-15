@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Import, KeyRound, Loader2, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ExternalLink, Import, KeyRound, Loader2, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,7 @@ export function DashboardPage() {
   const [editingName, setEditingName] = useState("");
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
-  /* Load workflows from DB on mount */
+ 
   const fetchWorkflows = useCallback(async () => {
     try {
       const res = await fetch("/api/workflows");
@@ -40,7 +40,7 @@ export function DashboardPage() {
         const data = await res.json();
         setWorkflows(data.workflows ?? []);
       }
-    } catch { /* silent */ }
+    } catch {  }
     setLoading(false);
   }, []);
 
@@ -54,7 +54,7 @@ export function DashboardPage() {
     return workflows.filter((w) => w.name.toLowerCase().includes(q));
   }, [workflows, searchQuery]);
 
-  /* Find the sample workflow for the System Workflows section */
+ 
   const sampleWorkflow = workflows.find((w) => w.name === SYSTEM_WORKFLOW_NAME);
   const userWorkflows = filtered.filter((w) => w.name !== SYSTEM_WORKFLOW_NAME);
 
@@ -91,7 +91,7 @@ export function DashboardPage() {
         const data = await res.json();
         router.push(`/workflow/${data.workflow.id}`);
       }
-    } catch { /* silent */ }
+    } catch {}
     setCreating(false);
   }, [workflows.length, router]);
 
@@ -100,7 +100,7 @@ export function DashboardPage() {
     setMenuOpenId(null);
     try {
       await fetch(`/api/workflows/${id}`, { method: "DELETE" });
-    } catch { /* silent */ }
+    } catch {  }
   }, []);
 
   const startRename = (wf: DbWorkflow) => {
@@ -263,7 +263,21 @@ export function DashboardPage() {
             </div>
           ) : userWorkflows.length === 0 ? (
             <div className="rounded-lg border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
-              {searchQuery ? "No workflows match your search." : "No workflows yet. Use the plus button to create one."}
+              <p>
+                {searchQuery ? "No workflows match your search." : "No workflows yet. Create your first workflow to start building."}
+              </p>
+              {!searchQuery && (
+                <Button
+                  className="mt-4"
+                  size="sm"
+                  variant="dark"
+                  onClick={createWorkflow}
+                  disabled={creating}
+                >
+                  {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                  Create workflow
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(168px,168px))] gap-5">
@@ -317,7 +331,16 @@ export function DashboardPage() {
                     </button>
                   </div>
                   {menuOpenId === wf.id && (
-                    <div className="absolute right-1 top-9 z-30 w-[140px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-float">
+                    <div className="absolute right-1 top-9 z-30 w-[156px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-float">
+                      <button
+                        className="flex h-8 w-full items-center gap-2 px-3 text-xs hover:bg-gray-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/workflow/${wf.id}`);
+                        }}
+                      >
+                        <ExternalLink size={12} /> Open
+                      </button>
                       <button
                         className="flex h-8 w-full items-center gap-2 px-3 text-xs hover:bg-gray-50"
                         onClick={(e) => {
@@ -327,6 +350,17 @@ export function DashboardPage() {
                       >
                         <Pencil size={12} /> Rename
                       </button>
+                      <button
+                        className="flex h-8 w-full items-center gap-2 px-3 text-xs hover:bg-gray-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuOpenId(null);
+                          createWorkflow();
+                        }}
+                      >
+                        <Plus size={12} /> Create new
+                      </button>
+                      <div className="border-t border-gray-100" />
                       <button
                         className="flex h-8 w-full items-center gap-2 px-3 text-xs text-red-500 hover:bg-red-50"
                         onClick={(e) => {

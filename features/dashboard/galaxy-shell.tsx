@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/ui-store";
+import Link from "next/link";
 
 const sections = [
   {
@@ -141,9 +142,9 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
       >
         <div className="flex h-full flex-col">
           <div className="flex h-[50px] items-center justify-between px-3">
-            <div className="grid h-6 w-6 place-items-center rounded-full border border-black bg-black text-[10px] text-white">
+            <Link href="/" className="grid h-6 w-6 place-items-center rounded-full border border-black bg-black text-[10px] text-white">
               NF
-            </div>
+            </Link>
             <button
               aria-label="Close sidebar"
               className="grid h-7 w-7 place-items-center rounded-md border border-gray-200 text-gray-700 hover:bg-white"
