@@ -45,13 +45,6 @@ export function GroqNode(props: NodeProps<WorkflowNode>) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [modelDropdownOpen]);
 
-  const baseInputsY = 132;
-  const inputCount = props.data.inputs?.length ?? 0;
-  const inputsHeight = inputCount * 33;
-  const settingsHeight = settingsOpen ? 80 : 28;
-  const outputBoxTop = baseInputsY + inputsHeight + settingsHeight + 12;
-  const outputHandleTop = outputBoxTop + 30;
-
   return (
     <BaseNode node={props} className="w-[238px]">
       <div className="space-y-2 p-3">
@@ -199,7 +192,7 @@ export function GroqNode(props: NodeProps<WorkflowNode>) {
             />
           )}
         </div>
-        {props.data.inputs?.map((input, index) => {
+        {props.data.inputs?.map((input) => {
           const color = inputHandleColors[input.id] ?? "#94a3b8";
           return (
             <div key={input.id} className="relative flex h-[25px] items-center gap-2 rounded bg-[#f7f7f8] px-2">
@@ -209,7 +202,7 @@ export function GroqNode(props: NodeProps<WorkflowNode>) {
               <span className={cn("flex-1 truncate text-right text-[9px]", input.connected ? "font-medium text-galaxy-purple" : "text-gray-400")}>
                 {input.connected ? "Connected" : typeof input.value === "string" && input.value.length > 20 ? input.value.slice(0, 20) + "..." : String(input.value ?? "")}
               </span>
-              <InputHandle id={input.id} top={baseInputsY + index * 33} color={color} />
+              <InputHandle id={input.id} color={color} />
             </div>
           );
         })}
@@ -230,7 +223,7 @@ export function GroqNode(props: NodeProps<WorkflowNode>) {
         )}
 
    
-        <div className="min-h-[46px] rounded-md border border-gray-100 bg-[#fbfbfc] p-2 text-[9px] leading-4 text-gray-500">
+        <div className="relative min-h-[46px] rounded-md border border-gray-100 bg-[#fbfbfc] p-2 text-[9px] leading-4 text-gray-500">
           {isRunning ? (
             <div className="flex items-center gap-2 text-orange-500">
               <Loader2 size={10} className="animate-spin" />
@@ -241,8 +234,8 @@ export function GroqNode(props: NodeProps<WorkflowNode>) {
           ) : (
             "No output yet"
           )}
+          <OutputHandle id="response" color="#f97316" />
         </div>
-        <OutputHandle id="response" top={outputHandleTop} color="#f97316" />
       </div>
     </BaseNode>
   );

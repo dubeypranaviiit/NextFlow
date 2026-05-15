@@ -18,7 +18,7 @@ export function BaseNode({
   return (
     <div
       className={cn(
-        "w-[224px] overflow-hidden rounded-[7px] border border-gray-200 bg-white shadow-node transition-all duration-200",
+        "w-[224px] overflow-visible rounded-[7px] border border-gray-200 bg-white shadow-node transition-all duration-200",
         node.selected && "ring-2 ring-galaxy-purple/30",
         status === "queued" && "border-amber-200 shadow-[0_12px_28px_rgba(245,158,11,0.10)]",
         status === "running" && "animate-pulseGlow border-galaxy-purple/50",
@@ -91,7 +91,7 @@ export function InputHandle({
   color = "#f5a83c"
 }: {
   id: string;
-  top: number;
+  top?: number;
   color?: string;
 }) {
   return (
@@ -99,7 +99,7 @@ export function InputHandle({
       id={id}
       type="target"
       position={Position.Left}
-      style={{ top, background: color }}
+      style={{ top: top ?? "50%", background: color }}
     />
   );
 }
@@ -110,7 +110,7 @@ export function OutputHandle({
   color = "#f5a83c"
 }: {
   id: string;
-  top: number;
+  top?: number;
   color?: string;
 }) {
   return (
@@ -118,7 +118,7 @@ export function OutputHandle({
       id={id}
       type="source"
       position={Position.Right}
-      style={{ top, background: color }}
+      style={{ top: top ?? "50%", background: color }}
     />
   );
 }

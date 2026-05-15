@@ -131,7 +131,6 @@ export function RequestInputsNode(props: NodeProps<WorkflowNode>) {
             )}
             <OutputHandle
               id={field.id}
-              top={76 + index * 84}
               color={field.kind === "image_field" ? "#80aefb" : "#f5a83c"}
             />
           </div>

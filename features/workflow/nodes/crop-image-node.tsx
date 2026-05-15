@@ -131,7 +131,7 @@ export function CropImageNode(props: NodeProps<WorkflowNode>) {
           </div>
         )}
 
-        {props.data.inputs?.map((input, index) => {
+        {props.data.inputs?.map((input) => {
           const labelColor = colorMap[input.label] ?? "#6b7280";
           const isNumber = input.type === "number";
           const value = input.connected ? "Connected" : String(input.value ?? "");
@@ -214,7 +214,6 @@ export function CropImageNode(props: NodeProps<WorkflowNode>) {
 
               <InputHandle
                 id={input.id}
-                top={48 + index * 34}
                 color={handleColorMap[input.label] ?? "#f43f8f"}
               />
             </div>
@@ -229,7 +228,7 @@ export function CropImageNode(props: NodeProps<WorkflowNode>) {
         )}
 
       
-        <div className="mt-2 rounded-md border border-gray-100 bg-[#fbfbfc] px-2 py-3 text-center text-[9px] text-gray-400">
+        <div className="relative mt-2 rounded-md border border-gray-100 bg-[#fbfbfc] px-2 py-3 text-center text-[9px] text-gray-400">
           {isRunning ? (
             <span className="flex items-center justify-center gap-2 text-galaxy-purple">
               <Loader2 size={10} className="animate-spin" />
@@ -240,8 +239,8 @@ export function CropImageNode(props: NodeProps<WorkflowNode>) {
           ) : (
             "No output yet"
           )}
+          <OutputHandle id="output_image" color="#80aefb" />
         </div>
-        <OutputHandle id="output_image" top={inputPreviewUrl || outputPreviewUrl ? 330 : 248} color="#80aefb" />
       </div>
     </BaseNode>
   );

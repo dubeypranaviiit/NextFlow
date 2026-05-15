@@ -60,13 +60,6 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
   useEffect(() => {
     updateNodeInternals(props.id);
   }, [props.id, props.data.inputs?.length, settingsOpen, updateNodeInternals]);
-  const baseInputsY = 132;
-  const inputCount = props.data.inputs?.length ?? 0;
-  const inputsHeight = inputCount * 33;
-  const settingsHeight = settingsOpen ? 80 : 28;
-  const outputBoxTop = baseInputsY + inputsHeight + settingsHeight + 12;
-  const outputHandleTop = outputBoxTop + 30;
-
   return (
     <BaseNode node={props} className="w-[238px]">
       <div className="space-y-2 p-3">
@@ -240,7 +233,7 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
           )}
         </div>
 
-        {props.data.inputs?.map((input, index) => {
+        {props.data.inputs?.map((input) => {
           const color = inputHandleColors[input.id] ?? "#94a3b8";
           const imageUrls = input.id === "image"
             ? resolveInputImageUrls(workflow, props.id, input.id)
@@ -285,7 +278,6 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
               </div>
               <InputHandle
                 id={input.id}
-                top={baseInputsY + index * 33}
                 color={color}
               />
             </div>
@@ -309,7 +301,7 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
         )}
 
      
-        <div className="min-h-[46px] rounded-md border border-gray-100 bg-[#fbfbfc] p-2 text-[9px] leading-4 text-gray-500">
+        <div className="relative min-h-[46px] rounded-md border border-gray-100 bg-[#fbfbfc] p-2 text-[9px] leading-4 text-gray-500">
           {isRunning ? (
             <div className="flex items-center gap-2 text-galaxy-purple">
               <Loader2 size={10} className="animate-spin" />
@@ -320,8 +312,8 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
           ) : (
             "No output yet"
           )}
+          <OutputHandle id="response" color="#f5a83c" />
         </div>
-        <OutputHandle id="response" top={outputHandleTop} color="#f5a83c" />
       </div>
     </BaseNode>
   );

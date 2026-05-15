@@ -14,7 +14,7 @@ export function ResponseNode(props: NodeProps<WorkflowNode>) {
       <div className="p-3">
         <div className="relative h-[38px] rounded bg-[#f7f7f8] px-3 py-3 text-[9px] text-gray-500">
           result
-          <InputHandle id="result" top={53} color="#7c3aed" />
+          <InputHandle id="result" color="#7c3aed" />
         </div>
         <div className="mt-3 min-h-[28px] rounded-md border border-gray-100 bg-[#fbfbfc] px-2 py-2 text-[9px] text-gray-400">
           {status === "running" ? (
