@@ -7,6 +7,7 @@ import { topologicalBatches } from "@/server/execution/dag";
 import type { Workflow, WorkflowEdge, WorkflowNode } from "@/types/workflow";
 import type { cropImageTask } from "@/trigger/crop-image";
 import type { geminiTask } from "@/trigger/gemini";
+import type { groqTask } from "@/trigger/groq";
 
 const executeSchema = z.object({
   workflow: z.any(),
@@ -173,6 +174,19 @@ async function executeNode(
     });
   }
 
+  if (node.data.kind === "groq") {
+    const prompt = resolveInputValues(node, "prompt", edges, nodeOutputs, allNodes).join("\n") || node.data.prompt || "";
+    const systemPrompt =
+      node.data.systemPrompt || resolveInputValues(node, "system_prompt", edges, nodeOutputs, allNodes).join("\n");
+    if (!prompt) throw new Error("Groq node requires a prompt");
+
+    return executeGroqTask({
+      prompt,
+      systemPrompt: systemPrompt || undefined,
+      model: node.data.model ?? "llama-3.3-70b-versatile"
+    });
+  }
+
   if (node.data.kind === "response") {
     return resolveInputValues(node, "result", edges, nodeOutputs, allNodes).join("\n") || "Final result captured";
   }
@@ -263,7 +277,7 @@ async function executeGeminiTask(payload: {
 }) {
   try {
     const taskRun = await tasks.triggerAndPoll<typeof geminiTask>(
-      "gemini-3-1-pro",
+      "gemini-2.5-flash",
       payload,
       { pollIntervalMs: 1000 }
     );
@@ -272,6 +286,26 @@ async function executeGeminiTask(payload: {
   } catch (error) {
     if (!isTriggerAuthError(error)) throw error;
     const result = await runGeminiLocally(payload);
+    return result.text;
+  }
+}
+
+async function executeGroqTask(payload: {
+  prompt: string;
+  systemPrompt?: string;
+  model: string;
+}) {
+  try {
+    const taskRun = await tasks.triggerAndPoll<typeof groqTask>(
+      "groq-llm",
+      payload,
+      { pollIntervalMs: 1000 }
+    );
+    if (taskRun.status !== "COMPLETED") throw new Error(taskRun.error?.message ?? "Groq task failed");
+    return String(taskRun.output?.text ?? "No response generated");
+  } catch (error) {
+    if (!isTriggerAuthError(error)) throw error;
+    const result = await runGroqLocally(payload);
     return result.text;
   }
 }
@@ -333,6 +367,67 @@ async function runGeminiLocally(input: {
   return { text: data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "No response generated" };
 }
 
+async function runGroqLocally(input: {
+  prompt: string;
+  systemPrompt?: string;
+  model: string;
+}) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY not configured");
+
+  const primaryModel = resolveGroqModelId(input.model);
+  const modelsToTry = [
+    primaryModel,
+    ...["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"].filter(
+      (model) => model !== primaryModel
+    )
+  ];
+
+  for (const modelId of modelsToTry) {
+    const result = await callGroq(apiKey, modelId, input.prompt, input.systemPrompt);
+    if (result.ok) return { text: result.text };
+    if (result.status !== 429) throw new Error(result.error);
+  }
+
+  throw new Error("All Groq models are rate-limited. Please wait a moment and try again.");
+}
+
+async function callGroq(
+  apiKey: string,
+  modelId: string,
+  prompt: string,
+  systemPrompt?: string
+): Promise<{ ok: true; text: string } | { ok: false; status: number; error: string }> {
+  const messages: Array<{ role: string; content: string }> = [];
+  if (systemPrompt) messages.push({ role: "system", content: systemPrompt });
+  messages.push({ role: "user", content: prompt });
+
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: modelId,
+      messages,
+      temperature: 0.7,
+      max_tokens: 4096
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    return {
+      ok: false,
+      status: response.status,
+      error: data?.error?.message || `Groq API error: ${response.status}`
+    };
+  }
+
+  return { ok: true, text: data?.choices?.[0]?.message?.content ?? "No response generated" };
+}
+
 async function imageUrlToGeminiPart(imageUrl: string) {
   const parsed = parseDataUrl(imageUrl);
   if (parsed) return { inline_data: { mime_type: parsed.mimeType, data: parsed.data } };
@@ -365,19 +460,38 @@ async function loadImageBuffer(inputUrl: string) {
   return Buffer.from(await response.arrayBuffer());
 }
 
+
 function resolveGeminiModelId(model: string) {
   const map: Record<string, string> = {
-    "Gemini 3.1 Pro": "gemini-2.0-flash",
+    
+    "gemini-2.5-flash": "gemini-2.5-flash",
+    "gemini-2.5-pro": "gemini-2.5-pro",
+
+   
+    "Gemini 2.5 Flash": "gemini-2.5-flash",
+    "Gemini 2.5 Pro": "gemini-2.5-pro",
+
+    
+    "Gemini 1.5 Flash": "gemini-1.5-flash",
+    "Gemini 1.5 Pro": "gemini-1.5-pro",
+
+    
     "Gemini 2.0 Flash": "gemini-2.0-flash",
     "Gemini 2.0 Flash Lite": "gemini-2.0-flash-lite",
-    "Gemini 2.5 Flash": "gemini-2.5-flash-preview-05-20",
-    "Gemini 2.5 Pro": "gemini-2.5-pro-preview-05-06",
-    "Gemini 1.5 Pro": "gemini-2.0-flash",
-    "Gemini 1.5 Flash": "gemini-2.0-flash-lite",
-    "gemini-2.0-flash": "gemini-2.0-flash",
-    "gemini-2.0-flash-lite": "gemini-2.0-flash-lite",
-    "gemini-2.5-flash": "gemini-2.5-flash-preview-05-20",
-    "gemini-2.5-pro": "gemini-2.5-pro-preview-05-06"
   };
-  return map[model] ?? "gemini-2.0-flash";
+
+  return map[model] ?? "gemini-2.5-flash";
+}
+function resolveGroqModelId(model: string) {
+  const map: Record<string, string> = {
+    "Llama 3.3 70B": "llama-3.3-70b-versatile",
+    "Llama 3.1 8B": "llama-3.1-8b-instant",
+    "Mixtral 8x7B": "mixtral-8x7b-32768",
+    "Gemma 2 9B": "gemma2-9b-it",
+    "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant": "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768": "mixtral-8x7b-32768",
+    "gemma2-9b-it": "gemma2-9b-it"
+  };
+  return map[model] ?? "llama-3.3-70b-versatile";
 }

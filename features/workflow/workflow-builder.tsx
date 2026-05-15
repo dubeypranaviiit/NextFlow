@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Providers } from "@/components/providers";
 import { executeWorkflow } from "@/lib/client-execution";
 import { useWorkflowStore } from "@/store/workflow-store";
+import { useUiStore } from "@/store/ui-store";
 import { CropImageNode } from "@/features/workflow/nodes/crop-image-node";
 import { GeminiNode } from "@/features/workflow/nodes/gemini-node";
 import { GroqNode } from "@/features/workflow/nodes/groq-node";
@@ -44,7 +45,7 @@ export function WorkflowBuilderPage({ embedded = false, onBack }: { embedded?: b
 
 function WorkflowBuilderInner({ embedded, onBack }: { embedded: boolean; onBack?: () => void }) {
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const setSidebarOpen = useUiStore((s) => s.setSidebarOpen);
   const flow = useReactFlow();
   const importRef = useRef<HTMLInputElement>(null);
   const workflow = useWorkflowStore((s) => s.workflow);
@@ -74,6 +75,30 @@ function WorkflowBuilderInner({ embedded, onBack }: { embedded: boolean; onBack?
     }),
     []
   );
+
+  const displayEdges = useMemo(() => {
+    const statusByNode = new Map(workflow.nodes.map((node) => [node.id, node.data.status ?? "idle"]));
+    return workflow.edges.map((edge) => {
+      const sourceStatus = statusByNode.get(edge.source);
+      const targetStatus = statusByNode.get(edge.target);
+      const isActivePath =
+        sourceStatus === "running" ||
+        targetStatus === "running" ||
+        (sourceStatus === "success" && targetStatus === "queued");
+      const stroke = edge.data?.type === "image" ? "#80aefb" : "#f5a83c";
+
+      return {
+        ...edge,
+        animated: true,
+        style: {
+          ...edge.style,
+          stroke,
+          strokeWidth: isActivePath ? 3.2 : 2.2,
+          opacity: isActivePath ? 1 : 0.82
+        }
+      };
+    });
+  }, [workflow.edges, workflow.nodes]);
 
   const fit = useCallback(() => flow.fitView({ duration: 320, padding: 0.18 }), [flow]);
 
@@ -127,12 +152,12 @@ function WorkflowBuilderInner({ embedded, onBack }: { embedded: boolean; onBack?
       className={
         embedded
           ? "relative h-[calc(100vh-144px)] w-full overflow-hidden bg-galaxy-canvas"
-          : "relative h-screen w-screen overflow-hidden bg-galaxy-canvas"
+          : "relative h-[calc(100vh-50px)] w-full overflow-hidden bg-galaxy-canvas"
       }
     >
       <ReactFlow
         nodes={workflow.nodes}
-        edges={workflow.edges}
+        edges={displayEdges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -190,8 +215,8 @@ function WorkflowBuilderInner({ embedded, onBack }: { embedded: boolean; onBack?
        
           <button
             className="grid h-8 w-8 place-items-center rounded-md border border-gray-200 bg-white shadow-float transition hover:bg-gray-50"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            title="Toggle sidebar"
+            onClick={() => setSidebarOpen(true)}
+            title="Open sidebar"
           >
             <Columns2 size={14} className="text-gray-600" />
           </button>
@@ -279,7 +304,6 @@ function WorkflowBuilderInner({ embedded, onBack }: { embedded: boolean; onBack?
       </div>
 
       <FloatingToolbar onFit={fit} />
-      {sidebarOpen && <ExecutionHistorySidebar onClose={() => setSidebarOpen(false)} />}
       <HistoryPanel />
       <NodePicker />
       <CanvasContextMenu />
@@ -295,88 +319,4 @@ function download(name: string, content: string) {
   link.download = name;
   link.click();
   URL.revokeObjectURL(url);
-}
-function ExecutionHistorySidebar({ onClose }: { onClose: () => void }) {
-  const runs = useWorkflowStore((s) => s.runs);
-  const [activeTab, setActiveTab] = useState<"ui" | "api">("ui");
-
-  return (
-    <aside className="absolute bottom-0 right-0 top-0 z-30 w-[280px] animate-panelIn border-l border-gray-200 bg-white shadow-float">
-   
-      <div className="flex h-[48px] items-center justify-between border-b border-gray-100 px-4">
-        <h2 className="text-[13px] font-semibold text-gray-900">Execution History</h2>
-        <button
-          className="text-[12px] font-medium text-gray-500 hover:text-gray-700"
-          onClick={onClose}
-        >
-          Close
-        </button>
-      </div>
-
-    
-      <div className="flex border-b border-gray-100">
-        <button
-          className={`flex-1 py-2.5 text-center text-[12px] font-medium transition ${
-            activeTab === "ui"
-              ? "border-b-2 border-gray-900 text-gray-900"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
-          onClick={() => setActiveTab("ui")}
-        >
-          UI Runs
-        </button>
-        <button
-          className={`flex-1 py-2.5 text-center text-[12px] font-medium transition ${
-            activeTab === "api"
-              ? "border-b-2 border-gray-900 text-gray-900"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
-          onClick={() => setActiveTab("api")}
-        >
-          API Runs
-        </button>
-      </div>
-      <div className="flex items-center justify-between border-b border-gray-50 px-4 py-2.5">
-        <span className="text-[12px] font-medium text-gray-700">Run history</span>
-        <select className="rounded border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-600 outline-none">
-          <option>All</option>
-          <option>Success</option>
-          <option>Failed</option>
-        </select>
-      </div>
-      <div className="galaxy-scrollbar h-[calc(100%-148px)] overflow-y-auto p-3">
-        {runs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-[12px] italic text-gray-400">
-              No runs for this filter yet.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {runs.map((run) => (
-              <div
-                key={run.id}
-                className="rounded-lg border border-gray-200 bg-white p-3"
-              >
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-medium capitalize">{run.scope} run</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                      run.state === "success"
-                        ? "bg-emerald-50 text-emerald-600"
-                        : run.state === "failed"
-                          ? "bg-red-50 text-red-600"
-                          : "bg-gray-50 text-gray-600"
-                    }`}
-                  >
-                    {run.state}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </aside>
-  );
 }

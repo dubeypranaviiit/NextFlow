@@ -115,7 +115,7 @@ export function DashboardPage() {
         prev.map((w) => (w.id === editingId ? { ...w, name: editingName.trim() } : w))
       );
       try {
-        /* We need to fetch the workflow first to get full data for PUT */
+       
         const res = await fetch(`/api/workflows/${editingId}`);
         if (res.ok) {
           const data = await res.json();

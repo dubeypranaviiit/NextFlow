@@ -41,7 +41,7 @@ function WorkflowTabInner({ onEditWorkflow }: { onEditWorkflow: () => void }) {
 
   return (
     <div className="min-h-[calc(100vh-144px)] bg-white">
-      {/* Header row */}
+     
       <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
         <h2 className="text-[15px] font-semibold text-gray-900">
           Workflow Structure

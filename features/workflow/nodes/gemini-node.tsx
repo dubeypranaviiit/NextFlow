@@ -1,18 +1,25 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { NodeProps } from "@xyflow/react";
+import { useUpdateNodeInternals, type NodeProps } from "@xyflow/react";
 import { Check, ChevronDown, ChevronUp, Info, Loader2, MoreHorizontal, Play, RefreshCw, Sparkles, Zap } from "lucide-react";
 import { Textarea } from "@/components/ui/input";
 import { BaseNode, InputHandle, OutputHandle } from "@/features/workflow/nodes/base-node";
 import { cn } from "@/lib/utils";
 import { executeWorkflow } from "@/lib/client-execution";
+import { resolveInputImageUrls } from "@/lib/workflow-images";
 import { useWorkflowStore } from "@/store/workflow-store";
 import type { WorkflowNode } from "@/types/workflow";
 
 const GEMINI_MODELS = [ 
    { id:  "gemini-1.5-flash", label: "Gemini 1.5 Flash", description: "Fast and efficient", icon: Zap, color: "#f59e0b" },
-  { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash", description: "Fast and efficient", icon: Zap, color: "#f59e0b" },
+   {
+    id: "gemini-2.5-flash",
+    label: "Gemini 2.5 Flash",
+    description: "Fast and efficient",
+    icon: Zap,
+    color: "#f59e0b"
+  },
   { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro", description: "Advanced reasoning", icon: Sparkles, color: "#8b5cf6" },
 ] as const;
  
@@ -34,7 +41,9 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
   const isRunning = status === "running";
   const updateNodeData = useWorkflowStore((s) => s.updateNodeData);
   const deleteNode = useWorkflowStore((s) => s.deleteNode);
-  const currentModel = props.data.model ?? "gemini-1.5-flash";
+  const workflow = useWorkflowStore((s) => s.workflow);
+  const updateNodeInternals = useUpdateNodeInternals();
+  const currentModel = props.data.model ?? "gemini-2.5-flash";
   const currentModelConfig = GEMINI_MODELS.find((m) => m.id === currentModel) ?? GEMINI_MODELS[0];
 
   useEffect(() => {
@@ -47,6 +56,10 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [modelDropdownOpen]);
+
+  useEffect(() => {
+    updateNodeInternals(props.id);
+  }, [props.id, props.data.inputs?.length, settingsOpen, updateNodeInternals]);
   const baseInputsY = 132;
   const inputCount = props.data.inputs?.length ?? 0;
   const inputsHeight = inputCount * 33;
@@ -229,6 +242,9 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
 
         {props.data.inputs?.map((input, index) => {
           const color = inputHandleColors[input.id] ?? "#94a3b8";
+          const imageUrls = input.id === "image"
+            ? resolveInputImageUrls(workflow, props.id, input.id)
+            : [];
           return (
             <div
               key={input.id}
@@ -240,20 +256,33 @@ export function GeminiNode(props: NodeProps<WorkflowNode>) {
               >
                 {input.label}
               </span>
-              <span
-                className={cn(
-                  "flex-1 truncate text-right text-[9px]",
-                  input.connected
-                    ? "font-medium text-galaxy-purple"
-                    : "text-gray-400"
+              <div className="flex flex-1 items-center justify-end gap-1 overflow-hidden">
+                {imageUrls.slice(0, 3).map((imageUrl, imageIndex) => (
+                  <img
+                    key={`${imageUrl}-${imageIndex}`}
+                    src={imageUrl}
+                    alt=""
+                    className="h-[22px] w-[28px] rounded border border-white bg-gray-950 object-cover shadow-sm"
+                  />
+                ))}
+                {imageUrls.length > 3 && (
+                  <span className="text-[8px] font-medium text-gray-400">+{imageUrls.length - 3}</span>
                 )}
-              >
-                {input.connected
-                  ? "Connected"
-                  : typeof input.value === "string" && input.value.length > 20
-                    ? input.value.slice(0, 20) + "..."
-                    : String(input.value ?? "")}
-              </span>
+                <span
+                  className={cn(
+                    "min-w-0 truncate text-right text-[9px]",
+                    input.connected
+                      ? "font-medium text-galaxy-purple"
+                      : "text-gray-400"
+                  )}
+                >
+                  {input.connected
+                    ? "Connected"
+                    : typeof input.value === "string" && input.value.length > 20
+                      ? input.value.slice(0, 20) + "..."
+                      : String(input.value ?? "")}
+                </span>
+              </div>
               <InputHandle
                 id={input.id}
                 top={baseInputsY + index * 33}

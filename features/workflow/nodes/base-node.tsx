@@ -20,6 +20,7 @@ export function BaseNode({
       className={cn(
         "w-[224px] overflow-hidden rounded-[7px] border border-gray-200 bg-white shadow-node transition-all duration-200",
         node.selected && "ring-2 ring-galaxy-purple/30",
+        status === "queued" && "border-amber-200 shadow-[0_12px_28px_rgba(245,158,11,0.10)]",
         status === "running" && "animate-pulseGlow border-galaxy-purple/50",
         status === "success" && "border-emerald-200 shadow-[0_12px_28px_rgba(16,185,129,0.10)]",
         status === "failed" && "border-red-200 shadow-[0_12px_28px_rgba(239,68,68,0.10)]",
@@ -31,6 +32,7 @@ export function BaseNode({
       <div
         className={cn(
           "flex h-[34px] items-center border-b border-gray-100 px-3",
+          status === "queued" && "bg-amber-50/40",
           status === "running" && "bg-galaxy-purple/[0.03]",
           status === "success" && "bg-emerald-50/40",
           status === "failed" && "bg-red-50/40"
@@ -47,6 +49,9 @@ export function BaseNode({
           {status === "running" && (
             <Loader2 size={11} className="animate-spin text-galaxy-purple" />
           )}
+          {status === "queued" && (
+            <Clock3 size={11} className="text-amber-500" />
+          )}
           {status === "success" && (
             <Check size={11} className="text-emerald-500" />
           )}
@@ -58,6 +63,8 @@ export function BaseNode({
               "rounded px-2 py-0.5 text-[9px] font-semibold",
               status === "running"
                 ? "bg-purple-50 text-galaxy-purple"
+                : status === "queued"
+                  ? "bg-amber-50 text-amber-600"
                 : status === "failed"
                   ? "bg-red-50 text-red-500"
                   : "bg-[#e8faeb] text-green-600"
@@ -65,9 +72,11 @@ export function BaseNode({
           >
             {status === "running"
               ? "Running"
-              : status === "failed"
-                ? "Error"
-                : "Run"}
+              : status === "queued"
+                ? "Queued"
+                : status === "failed"
+                  ? "Error"
+                  : "Run"}
           </span>
         </div>
       </div>

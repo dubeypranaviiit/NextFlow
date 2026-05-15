@@ -3,11 +3,10 @@ import type { PortType, Workflow, WorkflowEdge, WorkflowNode } from "@/types/wor
 export const SYSTEM_WORKFLOW_NAME = "Trial Task Workflow";
 export const SYSTEM_WORKFLOW_CARD_TITLE = "Trial Task Workflow";
 export const systemWorkflowCardImage =
-  "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=700&q=80";
+  "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=700&q=80";
 
 const productPrompt =
-  "Product: Wireless Bluetooth Headphones. Features: Noise cancellation, 30-hour battery, foldable design.";
-
+  "Product: Luxury Sports Car. Features: Twin-turbo engine, aerodynamic design, premium leather interior, advanced digital cockpit.";
 export function createBlankWorkflow(
   userId = "demo-user",
   name = "Untitled Workflow",
@@ -159,9 +158,9 @@ export function createDefaultWorkflow(userId = "demo-user", idPrefix = "sample")
       type: "gemini",
       position: { x: 780, y: 50 },
       data: {
-        title: "Gemini 2.0 Flash",
+        title: "Gemini 2.5 Flash",
         kind: "gemini",
-        model: "Gemini 2.0 Flash",
+        model: "gemini-2.5-flash",
         systemPrompt:
           "You are a social media manager. Combine the tweet hook and the two product crops into a final marketing post.",
         inputs: geminiInputs(true, true),

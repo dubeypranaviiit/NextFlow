@@ -5,27 +5,32 @@ import { z } from "zod";
 const geminiPayloadSchema = z.object({
   prompt: z.string(),
   systemPrompt: z.string().optional(),
-  model: z.string().default("gemini-2.0-flash"),
+  model: z.string().default("gemini-2.5-flash"),
   imageUrl: z.string().optional(),
   imageUrls: z.array(z.string()).optional()
 });
 
 function resolveModelId(model: string): string {
   const map: Record<string, string> = {
-    "Gemini 3.1 Pro": "gemini-2.0-flash",
-    "Gemini 2.0 Flash": "gemini-2.0-flash",
-    "Gemini 1.5 Pro": "gemini-1.5-pro",
+    // UI labels
+    "Gemini 2.5 Flash": "gemini-2.5-flash",
     "Gemini 1.5 Flash": "gemini-1.5-flash",
-    "gemini-3.1-pro": "gemini-2.0-flash",
-    "gemini-2.0-flash": "gemini-2.0-flash",
-    "gemini-1.5-pro": "gemini-1.5-pro",
-    "gemini-1.5-flash": "gemini-1.5-flash"
+    "Gemini 1.5 Pro": "gemini-1.5-pro",
+
+    // old labels mapped safely
+    "Gemini 2.0 Flash": "gemini-2.5-flash",
+    "Gemini 3.1 Pro": "gemini-2.5-flash",
+
+    // direct ids
+    "gemini-2.5-flash": "gemini-2.5-flash",
+    "gemini-1.5-flash": "gemini-1.5-flash",
+    "gemini-1.5-pro": "gemini-1.5-pro"
   };
-  return map[model] ?? "gemini-2.0-flash";
+  return map[model] ?? "gemini-2.5-flash";
 }
 
 export const geminiTask = task({
-  id: "gemini-3-1-pro",
+  id: "gemini-2.5-flash",
   run: async (payload: z.infer<typeof geminiPayloadSchema>) => {
     const input = geminiPayloadSchema.parse(payload);
     const apiKey = process.env.GEMINI_API_KEY;

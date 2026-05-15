@@ -29,7 +29,11 @@ export function WorkflowDetailPage({ workflowId }: { workflowId: string }) {
   if (loading) return <LoadingScreen />;
 
   if (canvasMode) {
-    return <WorkflowBuilderPage onBack={() => setCanvasMode(false)} />;
+    return (
+      <GalaxyShell>
+        <WorkflowBuilderPage onBack={() => setCanvasMode(false)} />
+      </GalaxyShell>
+    );
   }
 
   const tabs: { id: Tab; label: string }[] = [

@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback } from "react";
-import type { NodeProps } from "@xyflow/react";
+import { useCallback, useEffect } from "react";
+import { useUpdateNodeInternals, type NodeProps } from "@xyflow/react";
 import { ImagePlus, Plus, Type } from "lucide-react";
 import { Textarea } from "@/components/ui/input";
 import { BaseNode, OutputHandle } from "@/features/workflow/nodes/base-node";
@@ -11,6 +11,11 @@ import type { FieldKind, WorkflowNode } from "@/types/workflow";
 export function RequestInputsNode(props: NodeProps<WorkflowNode>) {
   const updateNodeField = useWorkflowStore((s) => s.updateNodeField);
   const updateNodeData = useWorkflowStore((s) => s.updateNodeData);
+  const updateNodeInternals = useUpdateNodeInternals();
+
+  useEffect(() => {
+    updateNodeInternals(props.id);
+  }, [props.id, props.data.fields?.length, updateNodeInternals]);
 
   const addField = useCallback((kind: FieldKind) => {
     const fields = props.data.fields ?? [];

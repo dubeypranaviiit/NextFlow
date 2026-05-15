@@ -1,9 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-/**
- * Protected routes require a valid Clerk session.
- * Everything except the landing page and auth pages is protected.
- */
+
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/workflow(.*)",
