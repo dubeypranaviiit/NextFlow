@@ -13,6 +13,18 @@ export const cropImageTask = task({
   id: "crop-image-ffmpeg",
   run: async (payload: z.infer<typeof cropPayloadSchema>) => {
     const input = cropPayloadSchema.parse(payload);
+    const startedAt = Date.now();
+    console.log("[Trigger.dev] crop-image-ffmpeg started", {
+      hasInputUrl: Boolean(input.inputUrl),
+      inputKind: input.inputUrl.startsWith("data:") ? "data-url" : "remote-url",
+      crop: {
+        x: input.x,
+        y: input.y,
+        width: input.width,
+        height: input.height
+      }
+    });
+    console.log("[Trigger.dev] crop-image-ffmpeg waiting 30 seconds");
     await new Promise((resolve) => setTimeout(resolve, 30000));
 
     const sharp = (await import("sharp")).default;
@@ -28,6 +40,11 @@ export const cropImageTask = task({
       .extract({ left, top, width, height })
       .png()
       .toBuffer();
+    console.log("[Trigger.dev] crop-image-ffmpeg finished", {
+      durationMs: Date.now() - startedAt,
+      sourceSize: { width: imageWidth, height: imageHeight },
+      extractedSize: { width, height }
+    });
 
     return {
       outputUrl: `data:image/png;base64,${cropped.toString("base64")}`,

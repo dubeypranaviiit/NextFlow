@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { tasks } from "@trigger.dev/sdk/v3";
+import { configure, runs, tasks } from "@trigger.dev/sdk/v3";
+import type { AnyTask, TaskIdentifier, TaskPayload } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
 import { prisma } from "@/server/db/prisma";
 import { getCurrentUserId } from "@/lib/current-user";
@@ -254,15 +255,21 @@ async function executeCropTask(payload: {
   width: number;
   height: number;
 }) {
+  if (!shouldUseTriggerTasks()) {
+    console.log("[NextFlow] crop-image-ffmpeg running locally");
+    const result = await runCropLocally(payload);
+    return result.outputUrl;
+  }
+
   try {
-    const taskRun = await tasks.triggerAndPoll<typeof cropImageTask>(
+    console.log("[NextFlow] crop-image-ffmpeg running through Trigger.dev");
+    const taskRun = await triggerAndPollTask<typeof cropImageTask>(
       "crop-image-ffmpeg",
-      payload,
-      { pollIntervalMs: 1000 }
+      payload
     );
-    if (taskRun.status !== "COMPLETED") throw new Error(taskRun.error?.message ?? "Crop Image task failed");
     return String(taskRun.output?.outputUrl ?? payload.inputUrl);
   } catch (error) {
+    if (isStrictTriggerMode()) throw error;
     if (!isTriggerAuthError(error)) throw error;
     const result = await runCropLocally(payload);
     return result.outputUrl;
@@ -275,15 +282,21 @@ async function executeGeminiTask(payload: {
   model: string;
   imageUrls: string[];
 }) {
+  if (!shouldUseTriggerTasks()) {
+    console.log("[NextFlow] gemini-2.5-flash running locally");
+    const result = await runGeminiLocally(payload);
+    return result.text;
+  }
+
   try {
-    const taskRun = await tasks.triggerAndPoll<typeof geminiTask>(
+    console.log("[NextFlow] gemini-2.5-flash running through Trigger.dev");
+    const taskRun = await triggerAndPollTask<typeof geminiTask>(
       "gemini-2.5-flash",
-      payload,
-      { pollIntervalMs: 1000 }
+      payload
     );
-    if (taskRun.status !== "COMPLETED") throw new Error(taskRun.error?.message ?? "Gemini task failed");
     return String(taskRun.output?.text ?? "No response generated");
   } catch (error) {
+    if (isStrictTriggerMode()) throw error;
     if (!isTriggerAuthError(error)) throw error;
     const result = await runGeminiLocally(payload);
     return result.text;
@@ -295,24 +308,85 @@ async function executeGroqTask(payload: {
   systemPrompt?: string;
   model: string;
 }) {
+  if (!shouldUseTriggerTasks()) {
+    console.log("[NextFlow] groq-llm running locally");
+    const result = await runGroqLocally(payload);
+    return result.text;
+  }
+
   try {
-    const taskRun = await tasks.triggerAndPoll<typeof groqTask>(
+    console.log("[NextFlow] groq-llm running through Trigger.dev");
+    const taskRun = await triggerAndPollTask<typeof groqTask>(
       "groq-llm",
-      payload,
-      { pollIntervalMs: 1000 }
+      payload
     );
-    if (taskRun.status !== "COMPLETED") throw new Error(taskRun.error?.message ?? "Groq task failed");
     return String(taskRun.output?.text ?? "No response generated");
   } catch (error) {
+    if (isStrictTriggerMode()) throw error;
     if (!isTriggerAuthError(error)) throw error;
     const result = await runGroqLocally(payload);
     return result.text;
   }
 }
 
+function shouldUseTriggerTasks() {
+  return process.env.NEXTFLOW_EXECUTION_MODE !== "local" && Boolean(process.env.TRIGGER_SECRET_KEY);
+}
+
+function isStrictTriggerMode() {
+  return process.env.NEXTFLOW_EXECUTION_MODE === "trigger";
+}
+
+async function triggerAndPollTask<TTask extends AnyTask>(
+  taskId: TaskIdentifier<TTask>,
+  payload: TaskPayload<TTask>
+) {
+  configureTriggerClient();
+  const handle = await tasks.trigger<TTask>(taskId, payload);
+  const taskRun = await runs.poll(handle, { pollIntervalMs: 1000 });
+
+  if (taskRun.status !== "COMPLETED") {
+    throw new Error(getTriggerRunErrorMessage(taskRun.error, `${String(taskId)} task failed`));
+  }
+
+  return taskRun;
+}
+
+function configureTriggerClient() {
+  const accessToken = cleanEnvSecret(process.env.TRIGGER_SECRET_KEY);
+  if (!accessToken) {
+    throw new Error("TRIGGER_SECRET_KEY is not configured");
+  }
+  if (accessToken.startsWith("tr_pat_")) {
+    throw new Error(
+      "TRIGGER_SECRET_KEY is a personal access token. Use the project API key from Trigger.dev project API Keys, usually starting with tr_dev_ or tr_prod_."
+    );
+  }
+  configure({ accessToken });
+}
+
+function getTriggerRunErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error && "message" in error) {
+    return String((error as { message?: unknown }).message ?? fallback);
+  }
+  return fallback;
+}
+
+function cleanEnvSecret(value: string | undefined) {
+  return value?.trim().replace(/^["']|["']$/g, "");
+}
+
 function isTriggerAuthError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
-  return message.includes("Invalid API Key") || message.includes("TRIGGER_SECRET_KEY");
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("invalid api key") ||
+    lower.includes("trigger_secret_key") ||
+    lower.includes("unauthorized") ||
+    lower.includes("401") ||
+    lower.includes("authentication")
+  );
 }
 
 async function runCropLocally(input: {
@@ -322,7 +396,7 @@ async function runCropLocally(input: {
   width: number;
   height: number;
 }) {
-  await new Promise((resolve) => setTimeout(resolve, 30000));
+  await delay(30000);
   const sharp = (await import("sharp")).default;
   const source = await loadImageBuffer(input.inputUrl);
   const metadata = await sharp(source).metadata();
@@ -343,7 +417,17 @@ async function runGeminiLocally(input: {
   imageUrls: string[];
 }) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+  if (!apiKey) {
+    if (!process.env.GROQ_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    const imageNote = input.imageUrls.length
+      ? `\n\nImage inputs received: ${input.imageUrls.length}. Use the upstream crop context as supporting visual evidence.`
+      : "";
+    return runGroqLocally({
+      prompt: `${input.prompt}${imageNote}`,
+      systemPrompt: input.systemPrompt,
+      model: "llama-3.3-70b-versatile"
+    });
+  }
 
   const requestBody: any = { contents: [{ parts: [{ text: input.prompt }] }] };
   if (input.systemPrompt) requestBody.system_instruction = { parts: [{ text: input.systemPrompt }] };
@@ -458,6 +542,10 @@ async function loadImageBuffer(inputUrl: string) {
   const response = await fetch(inputUrl);
   if (!response.ok) throw new Error(`Could not fetch image: ${response.status}`);
   return Buffer.from(await response.arrayBuffer());
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 

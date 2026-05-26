@@ -52,11 +52,6 @@ export function createBlankWorkflow(
 export function createDefaultWorkflow(userId = "demo-user", idPrefix = "sample"): Workflow {
   const id = (value: string) => `${idPrefix}-${value}`;
 
-  const groqInputs = (promptConnected = true) => [
-    { id: "prompt", label: "Prompt", type: "text" as const, connected: promptConnected },
-    { id: "system_prompt", label: "System Prompt", type: "text" as const }
-  ];
-
   const geminiInputs = (promptConnected = true, imageConnected = false) => [
     { id: "prompt", label: "Prompt", type: "text" as const, connected: promptConnected },
     { id: "system_prompt", label: "System Prompt", type: "text" as const },
@@ -92,16 +87,16 @@ export function createDefaultWorkflow(userId = "demo-user", idPrefix = "sample")
       }
     },
     {
-      id: id("groq-1"),
-      type: "groq",
+      id: id("gemini-1"),
+      type: "gemini",
       position: { x: -56, y: -310 },
       data: {
-        title: "Llama 3.3 70B",
-        kind: "groq",
-        model: "llama-3.3-70b-versatile",
+        title: "Gemini 3.1 Pro",
+        kind: "gemini",
+        model: "gemini-3.1-pro-preview",
         systemPrompt:
           "You are a marketing copywriter. Write a one-paragraph product description.",
-        inputs: groqInputs(true),
+        inputs: geminiInputs(true),
         outputs: [{ id: "response", label: "Response text", type: "text" }]
       }
     },
@@ -140,16 +135,16 @@ export function createDefaultWorkflow(userId = "demo-user", idPrefix = "sample")
       }
     },
     {
-      id: id("groq-2"),
-      type: "groq",
+      id: id("gemini-2"),
+      type: "gemini",
       position: { x: 370, y: -220 },
       data: {
-        title: "Llama 3.3 70B",
-        kind: "groq",
-        model: "llama-3.3-70b-versatile",
+        title: "Gemini 3.1 Pro",
+        kind: "gemini",
+        model: "gemini-3.1-pro-preview",
         systemPrompt:
           "Condense the following product description into a tweet-length hook (under 240 characters).",
-        inputs: groqInputs(true),
+        inputs: geminiInputs(true),
         outputs: [{ id: "response", label: "Response text", type: "text" }]
       }
     },
@@ -158,9 +153,9 @@ export function createDefaultWorkflow(userId = "demo-user", idPrefix = "sample")
       type: "gemini",
       position: { x: 780, y: 50 },
       data: {
-        title: "Gemini 2.5 Flash",
+        title: "Gemini 3.1 Pro",
         kind: "gemini",
-        model: "gemini-2.5-flash",
+        model: "gemini-3.1-pro-preview",
         systemPrompt:
           "You are a social media manager. Combine the tweet hook and the two product crops into a final marketing post.",
         inputs: geminiInputs(true, true),
@@ -183,9 +178,9 @@ export function createDefaultWorkflow(userId = "demo-user", idPrefix = "sample")
   const edges: WorkflowEdge[] = [
     edge(id("request-inputs"), "image_field", id("crop-1"), "input_image", "image"),
     edge(id("request-inputs"), "image_field", id("crop-2"), "input_image", "image"),
-    edge(id("request-inputs"), "text_field", id("groq-1"), "prompt", "text"),
-    edge(id("groq-1"), "response", id("groq-2"), "prompt", "text"),
-    edge(id("groq-2"), "response", id("gemini-final"), "prompt", "text"),
+    edge(id("request-inputs"), "text_field", id("gemini-1"), "prompt", "text"),
+    edge(id("gemini-1"), "response", id("gemini-2"), "prompt", "text"),
+    edge(id("gemini-2"), "response", id("gemini-final"), "prompt", "text"),
     edge(id("crop-1"), "output_image", id("gemini-final"), "image", "image"),
     edge(id("crop-2"), "output_image", id("gemini-final"), "image", "image"),
     edge(id("gemini-final"), "response", id("response"), "result", "text")

@@ -17,6 +17,7 @@ const cardImage = systemWorkflowCardImage;
 type DbWorkflow = {
   id: string;
   name: string;
+  status?: string;
   updatedAt: string;
   description?: string;
 };
@@ -308,7 +309,12 @@ export function DashboardPage() {
                     ) : (
                       <h3 className="mt-2 truncate text-[13px] font-semibold">{wf.name}</h3>
                     )}
-                    <p className="mt-1 text-[11px] text-gray-500">{formatDate(wf.updatedAt)}</p>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <p className="min-w-0 text-[11px] text-gray-500">{formatDate(wf.updatedAt)}</p>
+                      <span className="shrink-0 rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[9px] font-medium capitalize text-gray-500">
+                        {wf.status ?? "idle"}
+                      </span>
+                    </div>
                   </button>
                   <div className="absolute right-1 top-1 hidden gap-1 group-hover:flex">
                     <button

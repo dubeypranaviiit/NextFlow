@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useClerk, useUser } from "@clerk/nextjs";
 import {
   BookOpen,
   Boxes,
@@ -85,6 +86,15 @@ function useCountdown(initialSeconds: number) {
 }
 
 export function GalaxyShell({ children, compact = false }: { children: React.ReactNode; compact?: boolean }) {
+  const { openUserProfile, signOut } = useClerk();
+  const { isLoaded, user } = useUser();
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const userDisplayName =
+    user?.fullName ||
+    user?.firstName ||
+    user?.primaryEmailAddress?.emailAddress ||
+    (isLoaded ? "Authenticated user" : "Loading profile...");
+  const userEmail = user?.primaryEmailAddress?.emailAddress || "";
   const sidebarOpen = useUiStore((s) => s.sidebarOpen);
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
@@ -115,6 +125,18 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [commandOpen, setCommandOpen]);
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+
+    function handleClick(e: MouseEvent) {
+      const menu = document.getElementById("galaxy-account-menu");
+      if (menu && !menu.contains(e.target as Node)) setAccountMenuOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [accountMenuOpen]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -209,12 +231,59 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
                 <button className="mb-3 flex h-8 w-full items-center justify-center gap-2 rounded-full bg-galaxy-purple text-xs font-semibold text-white">
                   <Gift size={13} /> Claim Offer
                 </button>
-                <div className="flex items-center gap-2 px-3 py-2 text-xs font-medium">
-                  <UserRound
-                    size={22}
-                    className="rounded-full bg-gray-200 p-1 text-gray-600"
-                  />
-                  Pranav Abhimanyu
+                <div id="galaxy-account-menu" className="relative">
+                  {accountMenuOpen && (
+                    <div className="absolute bottom-[42px] left-0 z-50 w-[470px] overflow-hidden rounded-[14px] border border-gray-200 bg-white text-gray-700 shadow-float max-sm:w-[calc(100vw-20px)]">
+                      <div className="flex items-center gap-4 px-6 py-5">
+                        <UserAvatar
+                          imageUrl={user?.imageUrl}
+                          name={userDisplayName}
+                          className="h-11 w-11 text-sm"
+                        />
+                        <div className="min-w-0">
+                          <div className="truncate text-[16px] font-semibold text-gray-900">
+                            {userDisplayName}
+                          </div>
+                          {userEmail && (
+                            <div className="mt-1 truncate text-[16px] text-gray-500">
+                              {userEmail}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        className="flex h-[63px] w-full items-center gap-8 border-t border-gray-100 px-9 text-[16px] font-medium text-gray-600 hover:bg-gray-50"
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          openUserProfile();
+                        }}
+                      >
+                        <Settings size={18} />
+                        Manage account
+                      </button>
+                      <button
+                        className="flex h-[63px] w-full items-center gap-8 border-t border-gray-100 px-9 text-[16px] font-medium text-gray-600 hover:bg-gray-50"
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          void signOut({ redirectUrl: "/sign-in" });
+                        }}
+                      >
+                        <LogOut size={18} />
+                        Sign out
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    className="flex h-9 max-w-full items-center gap-2 rounded-md px-1.5 text-xs font-semibold hover:bg-white hover:shadow-card"
+                    onClick={() => setAccountMenuOpen((open) => !open)}
+                  >
+                    <UserAvatar
+                      imageUrl={user?.imageUrl}
+                      name={userDisplayName}
+                      className="h-[28px] w-[28px] text-[10px]"
+                    />
+                    <span className="min-w-0 truncate">{userDisplayName}</span>
+                  </button>
                 </div>
               </div>
             </>
@@ -251,7 +320,39 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
   );
 }
 
+function UserAvatar({
+  imageUrl,
+  name,
+  className
+}: {
+  imageUrl?: string;
+  name: string;
+  className?: string;
+}) {
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={name}
+        className={cn("shrink-0 rounded-full object-cover", className)}
+      />
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        "grid shrink-0 place-items-center rounded-full bg-gray-200 font-semibold text-gray-600",
+        className
+      )}
+    >
+      {name.slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
 function SettingsDialog({ onClose }: { onClose: () => void }) {
+  const { user } = useUser();
   const [message, setMessage] = useState("");
   const tabs = [
     ["Account", UserRound],
@@ -301,7 +402,7 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
           </header>
           <div className="p-5">
             <SectionTitle>Account Information</SectionTitle>
-            <InfoRow title="Email" value="dpranav504@gmail.com" />
+            <InfoRow title="Email" value={user?.primaryEmailAddress?.emailAddress || "Not signed in"} />
             <SectionTitle className="mt-5">Organization</SectionTitle>
             <ActionRow
               title="Create Organization"

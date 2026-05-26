@@ -53,6 +53,7 @@ Thumbs.db
 # temp files
 *.tmp
 *.temp
+tmp_pdf/
 
 # vercel
 .vercel

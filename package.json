@@ -6,17 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "trigger:dev": "trigger.dev dev"
+    "trigger:dev": "npx trigger.dev dev"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.35.3",
     "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.18.0",
-    "@trigger.dev/sdk": "^3.3.17",
+    "@trigger.dev/sdk": "4.4.6",
     "@xyflow/react": "^12.8.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -27,10 +27,12 @@
     "react-dom": "^19.0.0",
     "sharp": "^0.34.5",
     "tailwind-merge": "^2.5.5",
+    "trigger.dev": "^4.4.6",
     "zod": "^3.25.76",
     "zustand": "^5.0.1"
   },
   "devDependencies": {
+    "@trigger.dev/build": "4.4.6",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",

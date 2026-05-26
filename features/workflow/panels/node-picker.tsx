@@ -29,7 +29,7 @@ const allNodes = [
   },
   {
     id: "gemini" as const,
-    title: "Gemini 2.0 Flash",
+    title: "Gemini 3.1 Pro",
     meta: "Google Gemini — multimodal LLM with vision",
     category: "LLM" as Category,
     icon: Sparkles,

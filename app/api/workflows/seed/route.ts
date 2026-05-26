@@ -25,7 +25,9 @@ export async function POST() {
     existing &&
     existing.description === sample.description &&
     existing.nodes.length >= 7 &&
-    existing.edges.length >= 8
+    existing.edges.length >= 8 &&
+    existing.nodes.every((node) => (node.data as any)?.kind !== "groq") &&
+    existing.nodes.filter((node) => (node.data as any)?.kind === "gemini").length >= 3
   ) {
     return NextResponse.json({ workflow: existing, seeded: false });
   }

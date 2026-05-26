@@ -327,9 +327,9 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
         type: "gemini",
         position: { x: cx + 40, y: cy + 40 },
         data: {
-          title: "Gemini 2.5 Flash",
+          title: "Gemini 3.1 Pro",
           kind: "gemini",
-          model: "gemini-2.5-flash",
+          model: "gemini-3.1-pro-preview",
           inputs: [
             { id: "prompt", label: "Prompt", type: "text" },
             { id: "system_prompt", label: "System Prompt", type: "text" },

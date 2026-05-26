@@ -17,6 +17,12 @@ export const groqTask = task({
   id: "groq-llm",
   run: async (payload: z.infer<typeof groqPayloadSchema>) => {
     const input = groqPayloadSchema.parse(payload);
+    const startedAt = Date.now();
+    console.log("[Trigger.dev] groq-llm started", {
+      model: input.model,
+      promptLength: input.prompt.length,
+      hasSystemPrompt: Boolean(input.systemPrompt)
+    });
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
 
@@ -27,8 +33,20 @@ export const groqTask = task({
     ];
 
     for (const modelId of modelsToTry) {
+      console.log("[Trigger.dev] groq-llm trying model", { model: modelId });
       const result = await callGroq(apiKey, modelId, input.prompt, input.systemPrompt);
-      if (result.ok) return { text: result.text, model: modelId };
+      if (result.ok) {
+        console.log("[Trigger.dev] groq-llm finished", {
+          model: modelId,
+          durationMs: Date.now() - startedAt,
+          outputLength: result.text.length
+        });
+        return { text: result.text, model: modelId };
+      }
+      console.log("[Trigger.dev] groq-llm model failed", {
+        model: modelId,
+        status: result.status
+      });
       if (result.status !== 429) throw new Error(result.error);
     }
 
