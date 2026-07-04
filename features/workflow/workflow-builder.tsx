@@ -17,6 +17,7 @@ import { Providers } from "@/components/providers";
 import { executeWorkflow } from "@/lib/client-execution";
 import { useWorkflowStore } from "@/store/workflow-store";
 import { useUiStore } from "@/store/ui-store";
+import { ConditionNode } from "@/features/workflow/nodes/condition-node";
 import { CropImageNode } from "@/features/workflow/nodes/crop-image-node";
 import { GeminiNode } from "@/features/workflow/nodes/gemini-node";
 import { GroqNode } from "@/features/workflow/nodes/groq-node";
@@ -30,6 +31,7 @@ import { CanvasContextMenu } from "@/features/workflow/panels/context-menu";
 const nodeTypes: NodeTypes = {
   request_inputs: RequestInputsNode,
   crop_image: CropImageNode,
+  condition: ConditionNode,
   gemini: GeminiNode,
   groq: GroqNode,
   response: ResponseNode
@@ -197,7 +199,9 @@ function WorkflowBuilderInner({ embedded, onBack }: { embedded: boolean; onBack?
               ? "#ece9ff"
               : n.type === "crop_image"
                 ? "#e8f1ff"
-                : "#f2f2f3"
+                : n.type === "condition"
+                  ? "#f59e0b"
+                  : "#f2f2f3"
           }
           maskColor="rgba(255,255,255,0.72)"
           className="!bottom-4 !right-4 !h-[116px] !w-[156px]"

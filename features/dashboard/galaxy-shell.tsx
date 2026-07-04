@@ -31,59 +31,12 @@ import Link from "next/link";
 
 const sections = [
   {
-    title: "",
+    title: "Navigation",
     items: [
-      ["All Tools", Grid2X2, "5933"],
-      ["Platform", Boxes],
-      ["API Docs", BookOpen],
-      ["Free Credits", Gift],
-      ["Become an Affiliate", CreditCard],
-      ["Feature Requests", Library]
-    ]
-  },
-  {
-    title: "Unfair Advantage",
-    items: [
-      ["Prompt Library", BookOpen],
-      ["Tutorials", Library],
-      ["Ad Library", Library]
-    ]
-  },
-  {
-    title: "Generation History",
-    items: [
-      ["Image Library", Image],
-      ["Video Library", Video],
-      ["Audio Library", Music]
-    ]
-  },
-  {
-    title: "Favorites",
-    note: "No favorites yet. Add tools from the tools page.",
-    items: [["Saved Prompts", BookOpen]]
-  },
-  {
-    title: "Popular",
-    items: [
-      ["AI Image Generator", Grid2X2],
-      ["AI Video Generator", Grid2X2],
-      ["AI Talking Photo", Grid2X2],
-      ["AI Lipsync Generator", Grid2X2]
+      ["Workflows", Grid2X2, "/dashboard"],
     ]
   }
 ] as const;
-
-function useCountdown(initialSeconds: number) {
-  const [seconds, setSeconds] = useState(initialSeconds);
-  useEffect(() => {
-    const interval = setInterval(() => setSeconds((s) => (s > 0 ? s - 1 : 0)), 1000);
-    return () => clearInterval(interval);
-  }, []);
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return `${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
-}
 
 export function GalaxyShell({ children, compact = false }: { children: React.ReactNode; compact?: boolean }) {
   const { openUserProfile, signOut } = useClerk();
@@ -101,7 +54,6 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const commandOpen = useUiStore((s) => s.commandOpen);
   const setCommandOpen = useUiStore((s) => s.setCommandOpen);
-  const countdown = useCountdown(useUiStore((s) => s.countdownSeconds));
   const hidden = compact || !sidebarOpen;
 
   useEffect(() => {
@@ -140,24 +92,11 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
 
   return (
     <div className="min-h-screen bg-white">
-   
-      <div className="fixed left-0 right-0 top-0 z-40 flex h-[50px] items-center justify-center bg-galaxy-red px-4 text-center text-[12px] font-semibold text-white sm:text-sm">
-        Pay once, get a <span className="mx-1 font-extrabold">LIFETIME</span> deal forever — for only $399
-        <span className="mx-2 hidden items-center gap-1 text-xs sm:inline-flex">
-          ⏱ {countdown}
-        </span>
-        <span className="ml-2 hidden cursor-pointer rounded-full bg-white px-4 py-1 text-[11px] font-semibold text-galaxy-red sm:inline">
-          Click here
-        </span>
-        <span className="ml-2 inline rounded-full bg-white px-3 py-0.5 text-[10px] font-semibold text-galaxy-red sm:hidden">
-          Only $399
-        </span>
-      </div>
 
       <aside
         id="galaxy-sidebar"
         className={cn(
-          "fixed bottom-0 left-0 top-[50px] z-30 border-r border-gray-200 bg-[#fbfbfc] transition-[width,transform] duration-200",
+          "fixed bottom-0 left-0 top-0 z-30 border-r border-gray-200 bg-[#fbfbfc] transition-[width,transform] duration-200",
           hidden ? "w-[213px] -translate-x-full" : "w-[213px] translate-x-0",
           "max-sm:shadow-float"
         )}
@@ -198,38 +137,26 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
                       </div>
                     )}
                     <div className="space-y-1">
-                      {section.items.map(([label, Icon, badge]) => (
-                        <div
+                      {section.items.map(([label, Icon, href]) => (
+                        <Link
                           key={label}
+                          href={href}
                           className="flex h-[29px] items-center gap-3 rounded-md px-1.5 text-[13px] text-gray-800 hover:bg-white cursor-pointer"
                         >
                           <Icon size={14} className="text-gray-700" />
                           <span className="truncate">{label}</span>
-                          {badge && (
-                            <span className="ml-auto rounded-full bg-[#e9e8ff] px-2 py-0.5 text-[11px] font-semibold text-galaxy-purple">
-                              {badge}
-                            </span>
-                          )}
-                        </div>
+                        </Link>
                       ))}
                     </div>
-                    {"note" in section && (
-                      <p className="mt-3 px-2 text-[11px] leading-4 text-gray-500">
-                        {section.note}
-                      </p>
-                    )}
                   </div>
                 ))}
               </nav>
               <div className="border-t border-gray-200 p-2">
                 <button
-                  className="mb-2 flex h-7 w-full items-center justify-center gap-2 rounded-full border border-gray-200 bg-white text-[11px]"
+                  className="mb-3 flex h-7 w-full items-center justify-center gap-2 rounded-full border border-gray-200 bg-white text-[11px]"
                   onClick={() => setSettingsOpen(true)}
                 >
                   <Settings size={13} /> Settings
-                </button>
-                <button className="mb-3 flex h-8 w-full items-center justify-center gap-2 rounded-full bg-galaxy-purple text-xs font-semibold text-white">
-                  <Gift size={13} /> Claim Offer
                 </button>
                 <div id="galaxy-account-menu" className="relative">
                   {accountMenuOpen && (
@@ -295,7 +222,7 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
       {hidden && (
         <button
           aria-label="Open sidebar"
-          className="fixed left-[14px] top-[62px] z-40 grid h-8 w-8 place-items-center rounded-md border border-gray-200 bg-white shadow-float hover:bg-gray-50"
+          className="fixed left-[14px] top-[12px] z-40 grid h-8 w-8 place-items-center rounded-md border border-gray-200 bg-white shadow-float hover:bg-gray-50"
           onClick={() => setSidebarOpen(true)}
         >
           <Columns2 size={14} className="text-gray-600" />
@@ -305,7 +232,7 @@ export function GalaxyShell({ children, compact = false }: { children: React.Rea
   
       <main
         className={cn(
-          "min-h-screen pt-[50px] transition-[padding] duration-200",
+          "min-h-screen pt-0 transition-[padding] duration-200",
           hidden ? "pl-0" : "pl-[213px] max-sm:pl-0"
         )}
       >

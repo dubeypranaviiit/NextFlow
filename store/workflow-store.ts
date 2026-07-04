@@ -81,7 +81,6 @@ async function executeSave(workflowId: string) {
     saveInFlight = false;
     if (saveQueued) {
       saveQueued = false;
-      /* Re-save with latest state */
       executeSave(useWorkflowStore.getState().workflow.id);
     }
   }
@@ -122,7 +121,7 @@ type WorkflowStore = {
   onNodesChange: (changes: NodeChange<WorkflowNode>[]) => void;
   onEdgesChange: (changes: EdgeChange<WorkflowEdge>[]) => void;
   connect: (connection: Connection) => void;
-  addNode: (kind: "crop_image" | "gemini" | "groq") => void;
+  addNode: (kind: "crop_image" | "gemini" | "groq" | "condition") => void;
   setViewport: (viewport: Viewport) => void;
   setCurrentZoom: (zoom: number) => void;
   deleteNode: (nodeId: string) => void;
@@ -321,6 +320,23 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
           outputs: [{ id: "response", label: "Response text", type: "text" }]
         }
       };
+    } else if (kind === "condition") {
+      node = {
+        id,
+        type: "condition",
+        position: { x: cx, y: cy },
+        data: {
+          title: "If / Else",
+          kind: "condition",
+          comparator: "contains" as const,
+          conditionValue: "",
+          inputs: [{ id: "input", label: "Input", type: "any" as const }],
+          outputs: [
+            { id: "true_branch", label: "True", type: "any" as const },
+            { id: "false_branch", label: "False", type: "any" as const },
+          ],
+        },
+      };
     } else {
       node = {
         id,
@@ -371,7 +387,6 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
   deleteEdge: (edgeId) => {
     checkpoint();
 
-    /* Un-mark connected inputs */
     const edge = get().workflow.edges.find((e) => e.id === edgeId);
 
     set((state) => {

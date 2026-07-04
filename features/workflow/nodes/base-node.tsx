@@ -1,7 +1,7 @@
 "use client";
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { Check, Clock3, Loader2, Lock, XCircle } from "lucide-react";
+import { Check, Clock3, Loader2, Lock, SkipForward, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { WorkflowNode } from "@/types/workflow";
 
@@ -24,6 +24,7 @@ export function BaseNode({
         status === "running" && "animate-pulseGlow border-galaxy-purple/50",
         status === "success" && "border-emerald-200 shadow-[0_12px_28px_rgba(16,185,129,0.10)]",
         status === "failed" && "border-red-200 shadow-[0_12px_28px_rgba(239,68,68,0.10)]",
+        status === "skipped" && "border-gray-300 shadow-[0_12px_28px_rgba(156,163,175,0.10)]",
         "hover:shadow-[0_16px_36px_rgba(16,16,20,0.14)]",
         className
       )}
@@ -35,7 +36,8 @@ export function BaseNode({
           status === "queued" && "bg-amber-50/40",
           status === "running" && "bg-galaxy-purple/[0.03]",
           status === "success" && "bg-emerald-50/40",
-          status === "failed" && "bg-red-50/40"
+          status === "failed" && "bg-red-50/40",
+          status === "skipped" && "bg-gray-50/40"
         )}
       >
         <h3 className="truncate text-[10px] font-semibold text-gray-800">
@@ -58,6 +60,9 @@ export function BaseNode({
           {status === "failed" && (
             <XCircle size={11} className="text-red-500" />
           )}
+          {status === "skipped" && (
+            <SkipForward size={11} className="text-gray-400" />
+          )}
           <span
             className={cn(
               "rounded px-2 py-0.5 text-[9px] font-semibold",
@@ -67,6 +72,8 @@ export function BaseNode({
                   ? "bg-amber-50 text-amber-600"
                 : status === "failed"
                   ? "bg-red-50 text-red-500"
+                : status === "skipped"
+                  ? "bg-gray-100 text-gray-500"
                   : "bg-[#e8faeb] text-green-600"
             )}
           >
@@ -76,6 +83,8 @@ export function BaseNode({
                 ? "Queued"
                 : status === "failed"
                   ? "Error"
+                : status === "skipped"
+                  ? "Skipped"
                   : "Run"}
           </span>
         </div>

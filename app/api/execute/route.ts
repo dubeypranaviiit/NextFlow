@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { evaluateCondition } from "@/lib/condition-evaluator";
 import { configure, runs, tasks } from "@trigger.dev/sdk/v3";
 import type { AnyTask, TaskIdentifier, TaskPayload } from "@trigger.dev/sdk/v3";
 import { z } from "zod";
@@ -45,13 +46,14 @@ export async function POST(request: Request) {
   const nodeRuns: Array<{
     nodeId: string;
     nodeTitle: string;
-    state: "success" | "failed";
+    state: "success" | "failed" | "skipped";
     durationMs: number;
     output?: string;
     error?: string;
   }> = [];
   const nodeOutputs = new Map<string, string>();
   const failedNodeIds = new Set<string>();
+  const skippedNodeIds = new Set<string>();
   let hasFailure = false;
 
   try {
@@ -61,6 +63,17 @@ export async function POST(request: Request) {
       const results = await Promise.all(
         batch.map(async (node) => {
           const started = Date.now();
+
+          // Check if this node should be skipped (downstream of inactive condition branch)
+          if (skippedNodeIds.has(node.id)) {
+            return {
+              nodeId: node.id,
+              nodeTitle: node.data.title,
+              state: "skipped" as const,
+              durationMs: 0,
+            };
+          }
+
           try {
             const failedParent = workflow.edges.some(
               (edge) => edge.target === node.id && failedNodeIds.has(edge.source)
@@ -90,6 +103,41 @@ export async function POST(request: Request) {
         })
       );
       nodeRuns.push(...results);
+
+      // After batch completes, check for condition nodes and propagate skips
+      for (const result of results) {
+        if (result.state !== "success") continue;
+        const executedNode = batch.find((n) => n.id === result.nodeId);
+        if (!executedNode || executedNode.data.kind !== "condition") continue;
+
+        // Parse the condition result
+        try {
+          const condResult = JSON.parse(result.output ?? "{}");
+          const inactiveHandle = condResult.result ? "false_branch" : "true_branch";
+          // Find edges from the inactive handle and mark their targets as skipped
+          for (const edge of workflow.edges) {
+            if (edge.source === executedNode.id && edge.sourceHandle === inactiveHandle) {
+              skippedNodeIds.add(edge.target);
+            }
+          }
+        } catch {}
+      }
+
+      // Propagate skips: if ALL incoming edges of a node come from skipped nodes, skip it too
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const node of workflow.nodes) {
+          if (skippedNodeIds.has(node.id)) continue;
+          const incomingEdges = workflow.edges.filter((e) => e.target === node.id);
+          if (incomingEdges.length === 0) continue;
+          const allSourcesSkipped = incomingEdges.every((e) => skippedNodeIds.has(e.source));
+          if (allSourcesSkipped) {
+            skippedNodeIds.add(node.id);
+            changed = true;
+          }
+        }
+      }
     }
 
     const durationMs = Date.now() - startedAt;
@@ -147,6 +195,14 @@ async function executeNode(
 ) {
   if (node.data.kind === "request_inputs") {
     return node.data.fields?.map((field) => field.imageUrl || field.value).filter(Boolean).join(", ") || "Inputs resolved";
+  }
+
+  if (node.data.kind === "condition") {
+    const inputValue = resolveInputValues(node, "input", edges, nodeOutputs, allNodes).join("\n") || "";
+    const comparator = node.data.comparator ?? "contains";
+    const conditionValue = node.data.conditionValue ?? "";
+    const result = evaluateCondition(inputValue, comparator, conditionValue);
+    return JSON.stringify({ result, value: inputValue });
   }
 
   if (node.data.kind === "crop_image") {
@@ -396,7 +452,7 @@ async function runCropLocally(input: {
   width: number;
   height: number;
 }) {
-  await delay(30000);
+  // await delay(30000);
   const sharp = (await import("sharp")).default;
   const source = await loadImageBuffer(input.inputUrl);
   const metadata = await sharp(source).metadata();

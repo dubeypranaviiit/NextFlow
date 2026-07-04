@@ -12,16 +12,13 @@ const geminiPayloadSchema = z.object({
 
 function resolveModelId(model: string): string {
   const map: Record<string, string> = {
-    // UI labels
     "Gemini 2.5 Flash": "gemini-2.5-flash",
     "Gemini 1.5 Flash": "gemini-1.5-flash",
     "Gemini 1.5 Pro": "gemini-1.5-pro",
 
-    // old labels mapped safely
     "Gemini 2.0 Flash": "gemini-2.5-flash",
     "Gemini 3.1 Pro": "gemini-2.5-flash",
 
-    // direct ids
     "gemini-2.5-flash": "gemini-2.5-flash",
     "gemini-1.5-flash": "gemini-1.5-flash",
     "gemini-1.5-pro": "gemini-1.5-pro"

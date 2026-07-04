@@ -1,133 +1,101 @@
 # NextFlow
 
-This is my submission for the Galaxy.ai workflow builder assignment.  
-The app is a workflow builder for LLM/image workflows where users can create workflows, connect nodes, run them, and see execution history.
+NextFlow is an interactive, visual no-code/low-code AI workflow orchestrator (a mini Zapier/n8n clone). It allows users to visually chain together LLMs (Gemini, Groq), image processors (FFmpeg/Sharp), and logical routing blocks into automated processing graphs.
 
-I used Gemini for multimodal/vision workflow steps, and Groq for fast text generation because HR said using other AI providers like Groq is allowed.
+---
 
-## Main Features
+## ✨ Features
 
-- Clerk authentication for sign in and sign up
-- Dashboard to create, open, rename, delete, and import workflows
-- React Flow canvas with draggable/connected workflow nodes
-- Default blank workflow with `Request Inputs` and `Response` nodes
-- Prebuilt sample workflow called `Trial Task Workflow`
-- Node picker for adding:
-  - Crop Image
-  - Gemini
-  - Groq
-- Workflow execution with DAG order
-- Parallel execution for nodes at the same workflow level
-- Crop Image waits for 30 seconds before returning, as required
-- Run history with node-level status, duration, output, and errors
-- JSON workflow export/import
-- PostgreSQL persistence using Prisma
+- **Visual Editor (React Flow)**: A draggable, connectable node canvas with real-time state management via Zustand.
+- **DAG Execution Engine**: An orchestrator that parses workflows as Directed Acyclic Graphs (DAGs) using **Kahn's Topological Sorting Algorithm** to execute concurrent batches in parallel.
+- **Conditional branching (If/Else Node)**: A secure conditional logic block that routes data streams to either a `True` or `False` handle, propagating a `skipped` status downstream to prune inactive execution branches automatically.
+- **Usage Metrics & Run History**: Deep execution stats recording start times, step status (success, failed, skipped), durations, raw outputs, and error stacks.
+- **Offline / Recruiter Fallback Mode**:
+  - **No-Auth Fallback**: Logs in automatically as a default `demo-user` if Clerk auth credentials are not in the environment variables (allowing zero-config local testing).
+  - **Local Engine Fallback**: Defaults to local node completions (Google Gemini REST / Groq REST / local `sharp` image crops) if Trigger.dev keys are absent.
+- **Import/Export**: Load or share workflows instantly via standard JSON configurations.
 
-## Tech Stack
+---
 
-- Next.js App Router
-- TypeScript
-- React Flow
-- Tailwind CSS
-- Zustand
-- Prisma
-- PostgreSQL
-- Clerk
-- Trigger.dev
-- Gemini API
-- Groq API
-- Transloadit
-- Sharp
+## 🛠️ Tech Stack
 
-## Setup
+- **Frontend**: Next.js (App Router), TypeScript, @xyflow/react (React Flow), Tailwind CSS, Zustand
+- **Database / ORM**: Prisma, PostgreSQL
+- **Execution & Jobs**: Trigger.dev v3 SDK, local REST completion layers
+- **File & Image Processing**: Sharp, Transloadit
+- **Testing**: Vitest
 
-Install dependencies:
+---
 
+## 📁 Key File Overview
+
+- `types/workflow.ts`: Unified TypeScript interfaces for nodes, ports, execution states, and comparison operators.
+- `store/workflow-store.ts`: Zustand store for state mutations, connectivity checks (preventing loops), and debounced database syncs.
+- `app/api/execute/route.ts`: Core serverless backend runner resolving the topological sort and propagating skipped states.
+- `lib/condition-evaluator.ts`: A secure evaluation library utilizing switch/case conditions rather than `eval()` to prevent remote code injection attacks.
+- `features/workflow/nodes/`: Directory containing visual canvas components (such as `condition-node.tsx`).
+- `features/workflow/nodes/base-node.tsx`: Shared frame component that renders status alerts, header styles, and badge states.
+
+---
+
+## 🚀 Setup & Installation
+
+### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-Create a `.env` file and add the required keys:
-
+### 2. Configure Environment Variables
+Create a `.env` file in the root folder:
 ```env
-DATABASE_URL=
+DATABASE_URL="your-postgresql-url"
 
+# Optional Clerk Authentication (falls back to "demo-user" if left blank)
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
 
-GEMINI_API_KEY=
-GROQ_API_KEY=
+# Local AI API Keys
+GEMINI_API_KEY="your-gemini-key"
+GROQ_API_KEY="your-groq-key"
+
+# Background Worker Offloading (Optional, runs locally if left blank)
 TRIGGER_SECRET_KEY=
 
+# File Upload Providers
 TRANSLOADIT_KEY=
 TRANSLOADIT_SECRET=
 TRANSLOADIT_TEMPLATE_ID=
 ```
 
-Generate Prisma client:
-
+### 3. Initialize the Database
 ```bash
-npm run prisma:generate
+npx prisma generate
+npx prisma db push
 ```
 
-Run database migration:
-
-```bash
-npm run prisma:migrate
-```
-
-Start the development server:
-
+### 4. Run the Dev Server
 ```bash
 npm run dev
 ```
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-The app should run at:
+---
 
-```text
-http://localhost:3000
+## 🧪 Running Unit Tests
+NextFlow includes unit tests to verify the condition evaluation engine and the branch routing logic.
+```bash
+# Run tests once
+npx vitest run
+
+# Run tests in watch mode
+npx vitest
 ```
 
-## Trigger.dev
+---
 
-For local Trigger.dev testing:
-
+## ⚙️ Trigger.dev Integration
+For production-ready background workers:
 ```bash
 npm run trigger:dev
 ```
-
-The executable workflow nodes are handled through Trigger.dev tasks. There is also a local fallback for development if Trigger auth is not configured.
-
-## Important Demo Flow
-
-For the assignment demo, the main workflow to show is `Trial Task Workflow`, not just a blank workflow.
-
-Suggested demo order:
-
-1. Sign in or sign up.
-2. Open the dashboard.
-3. Open `Trial Task Workflow`.
-4. Show the connected workflow graph.
-5. Run the full workflow.
-6. Show crop nodes taking 30+ seconds.
-7. Show Groq and Gemini outputs.
-8. Open the history panel and expand node-level results.
-9. Show export/import JSON.
-
-## Notes
-
-- New blank workflows start with only `Request Inputs` and `Response`, which is intentional.
-- The sample workflow is already prebuilt and connected.
-- Groq is included because I was allowed to use it for AI execution.
-- Make sure all environment variables are added on Vercel before deploying.
-
-## Commands
-
-```bash
-npm run dev
-npm run build
-npm run typecheck
-npm run prisma:generate
-npm run prisma:migrate
-```
-
+If `TRIGGER_SECRET_KEY` is not set, the workflow will automatically fall back to local direct executions.

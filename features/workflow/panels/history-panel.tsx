@@ -120,6 +120,9 @@ export function HistoryPanel() {
                           {nr.state === "running" && (
                             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-galaxy-purple" />
                           )}
+                          {nr.state === "skipped" && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                          )}
                           {nr.nodeTitle}
                         </span>
                         <span className="ml-auto text-gray-500">
@@ -223,6 +226,7 @@ function dataFlowLabel(node: WorkflowNode) {
   if (node.data.kind === "request_inputs") return "Inputs: text_field + image_field";
   if (node.data.kind === "crop_image") return "Image: original photo → cropped image output";
   if (node.data.kind === "gemini") return "Gemini 2.5 Flash: prompt + Image (Vision) → marketing text";
+  if (node.data.kind === "condition") return "If / Else";
   if (node.data.kind === "response") return "Final Gemini text captured";
   return "Text: prompt → generated text";
 }
@@ -247,5 +251,6 @@ function statusDot(state?: NodeRun["state"]) {
   if (state === "failed") return "bg-red-500";
   if (state === "running") return "bg-galaxy-purple";
   if (state === "queued") return "bg-amber-500";
+  if (state === "skipped") return "bg-gray-400";
   return "bg-emerald-500";
 }

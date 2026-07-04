@@ -1,8 +1,9 @@
 import type { Edge, Node, Viewport } from "@xyflow/react";
 
-export type NodeKind = "request_inputs" | "crop_image" | "gemini" | "groq" | "response";
+export type NodeKind = "request_inputs" | "crop_image" | "gemini" | "groq" | "response" | "condition";
 export type FieldKind = "text_field" | "image_field";
-export type ExecutionState = "idle" | "queued" | "running" | "success" | "failed";
+export type ExecutionState = "idle" | "queued" | "running" | "success" | "failed" | "skipped";
+export type Comparator = "contains" | "equals" | "starts_with" | "greater_than" | "less_than";
 export type RunScope = "full" | "partial" | "single";
 export type PortType = "text" | "image" | "video" | "audio" | "file" | "number" | "any";
 
@@ -44,6 +45,8 @@ export type WorkflowNodeData = {
   settingsOpen?: boolean;
   durationMs?: number;
   error?: string;
+  comparator?: Comparator;
+  conditionValue?: string;
 };
 
 export type WorkflowNode = Node<WorkflowNodeData, NodeKind>;

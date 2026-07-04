@@ -24,8 +24,8 @@ export const cropImageTask = task({
         height: input.height
       }
     });
-    console.log("[Trigger.dev] crop-image-ffmpeg waiting 30 seconds");
-    await new Promise((resolve) => setTimeout(resolve, 30000));
+    // console.log("[Trigger.dev] crop-image-ffmpeg waiting 30 seconds");
+    // await new Promise((resolve) => setTimeout(resolve, 30000));
 
     const sharp = (await import("sharp")).default;
     const source = await loadImageBuffer(input.inputUrl);

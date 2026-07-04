@@ -24,26 +24,8 @@ import { cn } from "@/lib/utils";
 type AuthMode = "sign-in" | "sign-up";
 
 const navItems = [
-  ["All Tools", Grid2X2, "5933"],
-  ["Platform", Boxes],
-  ["API Docs", BookOpen],
-  ["Free Credits", Gift],
-  ["Become an Affiliate", CreditCard],
-  ["Feature Requests", Library]
+  ["Workflows", Grid2X2],
 ] as const;
-
-const popular = [
-  "AI Image Generator",
-  "AI Video Generator",
-  "AI Talking Photo",
-  "AI Lipsync Generator",
-  "AI Image Editor",
-  "Chat with AI",
-  "Chat Arena",
-  "AI YouTube Summarizer",
-  "AI Headshot Generator",
-  "Custom GPTs"
-];
 
 export function AuthFlowPage({ mode }: { mode?: AuthMode }) {
   const [modal, setModal] = useState<AuthMode | null>(mode ?? null);
@@ -51,12 +33,7 @@ export function AuthFlowPage({ mode }: { mode?: AuthMode }) {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="fixed left-0 right-0 top-0 z-30 flex h-[50px] items-center justify-center bg-galaxy-red px-4 text-center text-[12px] font-semibold text-white sm:text-sm">
-        Pay once, get a LIFETIME deal forever - for only $399
-        <span className="mx-2 hidden text-xs sm:inline">18h 14m 28s</span>
-        <span className="hidden rounded-full bg-white px-4 py-1 text-galaxy-red sm:inline">Click here</span>
-      </div>
-      <aside className="fixed bottom-0 left-0 top-[50px] z-20 w-[213px] border-r border-gray-200 bg-[#fbfbfc] max-md:hidden">
+      <aside className="fixed bottom-0 left-0 top-0 z-20 w-[213px] border-r border-gray-200 bg-[#fbfbfc] max-md:hidden">
         <div className="flex h-full flex-col">
           <div className="flex h-[50px] items-center justify-between px-3">
             <div className="grid h-6 w-6 place-items-center rounded-full border border-black bg-black text-[10px] text-white">NF</div>
@@ -71,28 +48,22 @@ export function AuthFlowPage({ mode }: { mode?: AuthMode }) {
           </div>
           <nav className="galaxy-scrollbar mt-3 flex-1 overflow-y-auto px-2">
             <div className="space-y-1">
-              {navItems.map(([label, Icon, badge]) => (
+              {navItems.map(([label, Icon]) => (
                 <div key={label} className="flex h-[29px] items-center gap-3 rounded-md px-1.5 text-[13px] text-gray-800">
                   <Icon size={14} />
                   <span>{label}</span>
-                  {badge && <span className="ml-auto rounded-full bg-[#e9e8ff] px-2 py-0.5 text-[11px] font-semibold text-galaxy-purple">{badge}</span>}
                 </div>
               ))}
             </div>
-            <Section title="Unfair Advantage" items={["Prompt Library", "Tutorials", "Ad Library"]} />
-            <Section title="Popular" items={popular} />
           </nav>
           <div className="border-t border-gray-200 p-2">
-            <button className="mb-2 flex h-8 w-full items-center justify-center gap-2 rounded-full bg-galaxy-purple text-xs font-semibold text-white">
-              <Gift size={13} /> Claim Offer
-            </button>
             <button className="flex h-8 w-full items-center justify-center rounded-md bg-white text-xs shadow-card" onClick={() => setModal("sign-in")}>
               Sign in
             </button>
           </div>
         </div>
       </aside>
-      <section className="min-h-screen px-4 pb-16 pl-[213px] pt-[95px] max-md:pl-4">
+      <section className="min-h-screen px-4 pb-16 pl-[213px] pt-[45px] max-md:pl-4">
         <div className="mx-auto w-full max-w-[920px]">
           <div className="mb-8 flex items-start justify-between">
             <div>
@@ -126,13 +97,6 @@ export function AuthFlowPage({ mode }: { mode?: AuthMode }) {
             <InfoCard icon={<Boxes size={16} />} title="Visual Workflow Builder" text="Drag-and-drop canvas to chain AI models together. No coding needed." />
             <InfoCard icon={<Video size={16} />} title="Run Models Directly" text="Access 100+ AI models for text, image, video, and audio." />
             <InfoCard icon={<KeyRound size={16} />} title="API Access" text="Run any workflow via API. Manage keys and rate limits." />
-          </div>
-          <h3 className="mt-8 text-sm font-semibold">Popular Workflows</h3>
-          <p className="mt-1 text-[12px] text-gray-500">Sign in to explore and use pre-built templates.</p>
-          <div className="mt-4 grid grid-cols-3 gap-3 max-lg:grid-cols-1">
-            {["AI Image Generator", "Video Creator", "Content Writer", "Audio Transcriber", "Image Upscaler", "Generate Audio"].map((item) => (
-              <InfoCard key={item} icon={<Sparkles size={15} />} title={item} text="Generate production-ready AI outputs from simple prompts." compact />
-            ))}
           </div>
         </div>
       </section>

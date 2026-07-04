@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await new Promise((resolve) => setTimeout(resolve, 30000));
+    // await new Promise((resolve) => setTimeout(resolve, 30000));
     const sharp = (await import("sharp")).default;
     const source = await loadImageBuffer(body.inputUrl);
     const metadata = await sharp(source).metadata();

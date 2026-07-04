@@ -108,9 +108,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-/* ------------------------------------------------------------------ */
-/*  DELETE /api/workflows/[id]                                          */
-/* ------------------------------------------------------------------ */
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

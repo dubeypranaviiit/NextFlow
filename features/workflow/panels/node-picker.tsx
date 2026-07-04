@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Brain, Crop, Image, Layers, Search, Sparkles, Video, Volume2, Zap, X } from "lucide-react";
+import { Brain, Crop, GitBranch, Image, Layers, Search, Sparkles, Video, Volume2, Zap, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useWorkflowStore } from "@/store/workflow-store";
@@ -44,6 +44,15 @@ const allNodes = [
     icon: Crop,
     color: "#3b82f6",
     bgColor: "#eff6ff",
+  },
+  {
+    id: "condition" as const,
+    title: "If / Else",
+    meta: "Branch workflow based on a condition",
+    category: "Utility" as Category,
+    icon: GitBranch,
+    color: "#f59e0b",
+    bgColor: "#fffbeb",
   },
 ];
 

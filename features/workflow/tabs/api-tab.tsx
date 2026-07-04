@@ -80,7 +80,6 @@ const res = await fetch(\`\${BASE}/runs\`, {
 const { runId } = await res.json();
 console.log("Run started:", runId);
 
-// Poll for result
 async function poll(runId) {
   while (true) {
     const r = await fetch(
@@ -98,8 +97,7 @@ console.log(JSON.stringify(result, null, 2));`;
 }
 
 function getCurlCode(workflowId: string): string {
-  return `# Start a run
-curl -X POST https://api.magica.com/api/v1/runs \\
+  return `curl -X POST https://api.magica.com/api/v1/runs \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -111,7 +109,6 @@ curl -X POST https://api.magica.com/api/v1/runs \\
     }
   }'
 
-# Poll for result (replace RUN_ID)
 curl https://api.magica.com/api/v1/runs/RUN_ID?inDetails=true \\
   -H "Authorization: Bearer YOUR_API_KEY"`;
 }
@@ -136,10 +133,8 @@ export function ApiTab({ workflowId }: { workflowId: string }) {
 
   return (
     <div className="flex min-h-[calc(100vh-144px)]">
-      {/* Code panel */}
       <div className="flex w-1/2 flex-col border-r border-gray-200 bg-white">
         <div className="flex h-[44px] items-center justify-between border-b border-gray-100 px-4">
-          {/* Language selector */}
           <div className="relative">
             <button
               className="flex h-7 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 text-[12px] font-medium text-gray-700 hover:bg-gray-50"
